@@ -172,6 +172,8 @@ function Parser:genericPrefix(tokens, subParser)
 		table.insert(stack, token)
 	end
 
+	-- We must use a numeric-for loop so that we can go backwards
+	-- through the stack, starting at the top.
 	for i = #stack, 1, -1 do
 		local nodeKind = Parser.UnaryOpers[stack[i]]
 		left = AstNode.new(nodeKind, left)
@@ -201,6 +203,24 @@ function Parser:genericPostfix(tokens, subParser)
 
 	return left
 end
+
+-- Generic operator usage.
+Parser.parsePow = Parser.useGeneric(Parser.genericBinary, Parser.parseAssertionExpr, Token.Kind.Caret)
+Parser.parseUnary = Parser.useGeneric(Parser.genericPrefix, Parser.genericBinary,
+	Token.Kind.Minus, Token.Kind.ReservedNot)
+
+Parser.parseFactor = Parser.useGeneric(Parser.genericBinary, Parser.parseUnary, Token.Kind.Modulo)
+Parser.parseMulExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseMulExpr,
+	Token.Kind.Star, Token.Kind.Slash, Token.Kind.Modulo)
+
+Parser.parseSumExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseMulExpr, Token.Kind.Plus, Token.Kind.Minus)
+Parser.parseConcatExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseSumExpr, Token.Kind.Dot2)
+Parser.parseCompareExpr = Parser.useGeneric(Parser.genericBinary, Parser.pprseConcatExpr, Token.Kind.LessThan,
+	Token.Kind.LessEqual, Token.Kind.GreaterThan, Token.Kind.GreaterEqual, Token.Kind.Equal, Token.Kind.NotEqual)
+
+Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompareExpr, Token.Kind.And)
+Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr, Token.Kind.Or)
+Parser.parseExpr = Parser.parseOrExpr
 
 function Parser:parseTableConstructor()
 	local fields = {}
@@ -261,6 +281,21 @@ function Parser:parsePrefixExpr()
 	end
 
 	-- TODO: Parse name expression.
+end
+
+function Parser:parseTypeAnnotation()
+	-- TODO: Do this later...
+end
+
+function Parser:parseAssertionExpr()
+	local expr = self:parseSimpleExpr()
+
+	if self._options.allowTypeAnnotations and self:_accept(Token.Kind.DoubleColon) then
+		local annotation = self:parseTypeAnnotation()
+		expr = AstNode.new(AstNode.Kind.TypeAssertion, expr, annotation)
+	end
+
+	return expr
 end
 
 function Parser:parseFunctionArgs()
