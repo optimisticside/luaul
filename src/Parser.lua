@@ -78,6 +78,43 @@ function Parser:_expect(tokenKind)
 	return token
 end
 
+function Parser:parseTableConstructor()
+	local fields = {}
+
+	while not self:_accept(Token.Kind.RightBrace) do
+		-- [exp] = exp
+		if self:_accept(Token.Kind.LeftBracket) then
+			local key = self:parseExpr()
+			self:_expect(Token.Kind.RightBracket)
+
+			self:_expect(Token.Kind.Equals)
+			local value = self:parseExpr()
+			table.insert(fields, { key, value })
+
+		elseif self:_peekAccept(Token.Kind.Name) then
+			-- If we see a name, it could either be the key of a value
+			-- in the table, or just be a variable.
+			local name = self:_accept(Token.Kind.Name)
+
+			-- name = exp
+			if self:_accept(Token.Kind.Equals) then
+				local value = self:parseExpr()
+				table.insert(fields, { name, value })
+
+			-- name
+			else
+				table.insert(fields, name)
+			end
+		end
+
+		-- TODO: Accept a semi-colon or comma here. Also, how will we
+		-- ensure the user placed a semi-colon or comma before the next
+		-- field?
+	end
+
+	return AstNode.fromArray(AstNode.Kind.TableConstructor, fields)
+end
+
 function Parser:parseSimpleExpr()
 	-- Parser for simple tokens, where the corresponding node
 	-- can be found through a table.
@@ -93,41 +130,8 @@ function Parser:parseSimpleExpr()
 	end
 
 	-- Table constructor parser.
-	if self:_accept(Token.Kind.LeftBrace) then
-		local fields = {}
-
-		while not self:_accept(Token.Kind.RightBrace) do
-			-- [exp] = exp
-			if self:_accept(Token.Kind.LeftBracket) then
-				local key = self:parseExpr()
-				self:_expect(Token.Kind.RightBracket)
-
-				self:_expect(Token.Kind.Equals)
-				local value = self:parseExpr()
-				table.insert(fields, { key, value })
-
-			elseif self:_peekAccept(Token.Kind.Name) then
-				-- If we see a name, it could either be the key of a value
-				-- in the table, or just be a variable.
-				local name = self:_accept(Token.Kind.Name)
-
-				-- name = exp
-				if self:_accept(Token.Kind.Equals) then
-					local value = self:parseExpr()
-					table.insert(fields, { name, value })
-
-				-- name
-				else
-					table.insert(fields, name)
-				end
-			end
-
-			-- TODO: Accept a semi-colon or comma here. Also, how will we
-			-- ensure the user placed a semi-colon or comma before the next
-			-- field?
-		end
-
-		return AstNode.fromArray(AstNode.Kind.TableConstructor, fields)
+	if self:_peekAccept(Token.Kind.LeftBrace) then
+		return self:parseTableConstructor()
 	end
 end
 
@@ -139,6 +143,31 @@ function Parser:parsePrefixExpr()
 	end
 
 	-- TODO: Parse name expression.
+end
+
+function Parser:parseFunctionArgs()
+	if self:_accept(Token.Kind.LeftParen) then
+		local args = {}
+
+		while not self:_accept(Token.Kind.RightParen) do
+			if #args then
+				self:_expect(Token.Kind.Comma)
+			end
+
+			table.insert(args, self:parseExpr())
+		end
+
+		return args
+	end
+
+	if self:_peekAcept(Token.Kind.LeftBrace) then
+		return { self:parseTableConstructor() }
+	end
+
+	-- TODO: Add string acceptance here. Also, shouldn't we wait until the very
+	-- end (after checking for a left-brace and string) before parsing
+	-- traditional function arguments with parentheses, so we can expect them
+	-- and throw an error if they aren't provided.
 end
 
 function Parser:parsePrimaryExpr()
@@ -158,14 +187,15 @@ function Parser:parsePrimaryExpr()
 		elseif self:_accept(Token.Kind.Colon) then
 			local func = AstNode.new(AstNode.Kind.ColonIndex, expr, self:parseName())
 			-- TODO: Provide `self` flag to Parser::parseFunctionArgs?
-			self:_expect(Token.Kind.LeftParen)
 			expr = AstNode.new(AstNode.Kind.FunctionCall, func, self:parseFunctionArgs())
-			self:_expect(Token.Kind.RightParen)
 
-		-- prefixexpr(functionargs)
-		elseif self:_accept(Token.Kind.LeftParen) then
+		-- prefixexpr(functionargs) | prefixexpr{tableconstructor} | prefixexpr string
+		elseif
+			self:_peekAccept(Token.Kind.LeftParen)
+			or self:_peekAccept(Token.Kind.LeftBrace)
+			or self:_peekAccept(Token.Kind.String)
+		then
 			expr = AstNode.new(AstNode.Kind.FunctionCall, expr, self:parseFunctionArgs())
-			self:_expect(Token.Kind.RightParen)
 
 		else
 			break
