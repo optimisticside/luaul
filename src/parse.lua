@@ -2,6 +2,9 @@
 -- 5/1/2022
 -- Luau parser
 
+local AstNode = require(_VERSION == "Luau" and script.Parent.AstNode or "./AstNode.lua")
+local Token = require(_VERSION == "Luau" and script.Parent.Token or "./Token.lua")
+
 local Parser = {}
 Parser.__index = Parser
 
@@ -10,6 +13,9 @@ function Parser.new(tokens)
 	setmetatable(self, Parser)
 
 	self._tokens = tokens
+	self._token = self._tokens[1]
+	self._position = 1
+
 	return self
 end
 
