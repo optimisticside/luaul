@@ -48,35 +48,52 @@ end
 
 function Parser:parseStmt()
 	-- Do-block parser.
-	if self:_peekAccept(TokenKind.DO) then
-		local node = self:parseBlock()
+	if self:_accept(TokenKind.DO) then
+		local body = self:parseBlock()
 		self:_expect(TokenKind.END)
-		return AstNode.new(AstNode.Kind.DO, node)
+		return AstNode.new(AstNode.Kind.DO_BLOCK, body)
 	end
 
 	-- While-loop parser.
-	if self:_peekAccept(TokenKind.WHILE) then
-		local left = self:parseExpr()
+	if self:_accept(TokenKind.WHILE) then
+		local condition = self:parseExpr()
 		self:_expect(TokenKind.DO)
-		local right = self:parseBlock()
+
+		local body = self:parseBlock()
 		self:_expect(TokenKind.END)
-		return AstNode.new(AstNode.Kind.WHILE_LOOP left, right)
+
+		return AstNode.new(AstNode.Kind.WHILE_LOOP condition, body)
 	end
 
 	-- Repeat-until loop parser.
 	-- Essentially the same as the while-loop parser, except it expects
 	-- a `until` instead of `do`.
-	if self:_peekAccept(Token.Kind.REPEAT) then
-		local left = self:parseExpr()
+	if self:_accept(Token.Kind.REPEAT) then
+		local condition = self:parseExpr()
 		self:_expect(TokenKind.UNTIL)
-		local right = self:parseBlock()
+
+		local body = self:parseBlock()
 		self:_expect(TokenKind.END)
-		return AstNode.new(AstNode.Kind.REPEAT_LOOP left, right)
+
+		return AstNode.new(AstNode.Kind.REPEAT_LOOP condition, body)
 	end
 
 	-- If-block parser.
 	if self:_peekAccept(Token.Kind.IF) then
-		
+		local condition = self:parseExpr()
+		self:_expect(TokenKind.THEN)
+
+		local thenBlock = self:parseBlock()
+		local elseIfBlocks = {}
+
+		while self:_peekAccept(Token.Kind.ELSEIF) do
+			local elseIfCondition = self:parseExpr()
+			self:_expect(TokenKind.THEN)
+			table.insert(elseIfBlocks, elseIfCondition, self:parseBlock())
+		end
+
+		-- TODO: How do we store a chain of if-elseif statements in the ast?
+		self:_accept(Token.Kind.END)
 	end
 end
 
