@@ -1,6 +1,6 @@
 -- OptimisticSide
 -- 5/1/2022
---
+-- Abstract-syntax-tree node implementation
 
 local AstNode = {}
 AstNode.__index = AstNode
