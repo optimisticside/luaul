@@ -78,7 +78,7 @@ function Parser:_expect(tokenKind)
 	return token
 end
 
-function Parser:parseSimpleExp()
+function Parser:parseSimpleExpr()
 	-- Parser for simple tokens, where the corresponding node
 	-- can be found through a table.
 	local simpleTokens = {
@@ -99,11 +99,11 @@ function Parser:parseSimpleExp()
 		while not self:_accept(Token.Kind.RightBrace) do
 			-- [exp] = exp
 			if self:_accept(Token.Kind.LeftBracket) then
-				local key = self:parseExp()
+				local key = self:parseExpr()
 				self:_expect(Token.Kind.RightBracket)
 
 				self:_expect(Token.Kind.Equals)
-				local value = self:parseExp()
+				local value = self:parseExpr()
 				table.insert(fields, { key, value })
 
 			elseif self:_peekAccept(Token.Kind.Name) then
@@ -113,7 +113,7 @@ function Parser:parseSimpleExp()
 
 				-- name = exp
 				if self:_accept(Token.Kind.Equals) then
-					local value = self:parseExp()
+					local value = self:parseExpr()
 					table.insert(fields, { name, value })
 
 				-- name
@@ -131,27 +131,48 @@ function Parser:parseSimpleExp()
 	end
 end
 
-function Parser:parsePrefixExp()
+function Parser:parsePrefixExpr()
 	if self:_accept(Token.Kind.LeftParen) then
-		local exp = self:parseExp()
+		local expr = self:parseExpr()
 		self:_expect(Token.Kind.RightParen)
-		return exp
+		return expr
 	end
 
-	-- TODO: Prefix expressions can also be function calls and variables,
-	-- and parsing the two can be hard.
+	-- TODO: Parse name expression.
 end
 
-function Parser:parseFunctionCall()
-	local prefixExp = self:parsePrefixExp()
+function Parser:parsePrimaryExpr()
+	local expr = self:parsePrefixExpr()
 
-	if self:_accept(Token.Kind.Colon) then
-		local name = self:parseName()
-		prefixExp = AstNode.new(AstNode.Kind.Colon, prefixExp, name)
+	while true do
+		-- prefixexpr.name
+		if self:_accept(Token.Kind.Dot) then
+			expr = AstNode.new(AstNode.Kind.IndexName, expr, self:parseName())
+
+		-- prefixexpr[expr]
+		elseif self:_accept(Token.Kind.LeftBracket) then
+			expr = AstNode.new(AstNode.Kind.IndexExpr, expr, self:parseExpr())
+			self:_expect(Token.Kind.RightBracket)
+
+		-- prefixexpr:name(functionargs)
+		elseif self:_accept(Token.Kind.Colon) then
+			local func = AstNode.new(AstNode.Kind.ColonIndex, expr, self:parseName())
+			-- TODO: Provide `self` flag to Parser::parseFunctionArgs?
+			self:_expect(Token.Kind.LeftParen)
+			expr = AstNode.new(AstNode.Kind.FunctionCall, func, self:parseFunctionArgs())
+			self:_expect(Token.Kind.RightParen)
+
+		-- prefixexpr(functionargs)
+		elseif self:_accept(Token.Kind.LeftParen) then
+			expr = AstNode.new(AstNode.Kind.FunctionCall, expr, self:parseFunctionArgs())
+			self:_expect(Token.Kind.RightParen)
+
+		else
+			break
+		end
 	end
 
-	local funcArgs = self:parseFuncArgs()
-	return AstNode.new(AstNode.Kind.FunctionCall, prefixExp, funcArgs)
+	return expr
 end
 
 function Parser:parseStat()
@@ -164,7 +185,7 @@ function Parser:parseStat()
 
 	-- While-loop parser.
 	if self:_accept(Token.Kind.While) then
-		local condition = self:parseExp()
+		local condition = self:parseExpr()
 		self:_expect(Token.Kind.Do)
 
 		local body = self:parseBlock()
@@ -177,7 +198,7 @@ function Parser:parseStat()
 	-- Essentially the same as the while-loop parser, except it expects
 	-- a `until` instead of `do`.
 	if self:_accept(Token.Kind.Repeat) then
-		local condition = self:parseExp()
+		local condition = self:parseExpr()
 		self:_expect(Token.Kind.Until)
 
 		local body = self:parseBlock()
@@ -188,14 +209,14 @@ function Parser:parseStat()
 
 	-- If-block parser.
 	if self:_accept(Token.Kind.If) then
-		local ifCondition = self:parseExp()
+		local ifCondition = self:parseExpr()
 		self:_expect(Token.Kind.Then)
 
 		local thenBlock = self:parseBlock()
 		local blocks = { { ifCondition, thenBlock }  }
 
 		while self:_accept(Token.Kind.ElseIf) do
-			local elseIfCondition = self:parseExp()
+			local elseIfCondition = self:parseExpr()
 			self:_expect(Token.Kind.Then)
 			table.insert(blocks, { elseIfCondition, self:parseBlock() })
 		end
