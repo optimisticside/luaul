@@ -79,22 +79,55 @@ function Parser:_expect(tokenKind)
 end
 
 function Parser:parseSimpleExp()
-	-- TODO: Simple things like this can be made into a table
-	-- of tokens and their respective ast-nodes.
-	if self:_accept(Token.Kind.True) then
-		return AstNode.new(AstNode.Kind.True)
+	-- Parser for simple tokens, where the corresponding node
+	-- can be found through a table.
+	local simpleTokens = {
+		[Token.Kind.True] = AstNode.Kind.True,
+		[Token.Kind.False] = AstNode.Kind.False,
+		[Token.Kind.Nil] = AstNode.Kind.Nil,
+		[Token.Kind.Dot3] = AstNode.Kind.Dot3,
+	}
+	local nodeKind = simpleTokens[self._token.kind]
+	if nodeKind then
+		return AstNode.new(nodeKind)
 	end
 
-	if self:_accept(Token.Kind.False) then
-		return AstNode.new(AstNode.Kind.False)
-	end
+	-- Table constructor parser.
+	if self:_accept(Token.Kind.LeftBrace) then
+		local fields = {}
 
-	if self:_accept(Token.Kind.Nil) then
-		return AstNode.new(AstNode.Kind.Nil)
-	end
+		while not self:_accept(Token.Kind.RightBrace) do
+			-- [exp] = exp
+			if self:_accept(Token.Kind.LeftBracket) then
+				local key = self:parseExp()
+				self:_expect(Token.Kind.RightBracket)
 
-	if self:_accept(Token.Kind.Dot3) then
-		return AstNode.new(AstNode.Kind.Dot3)
+				self:_expect(Token.Kind.Equals)
+				local value = self:parseExp()
+				table.insert(fields, { key, value })
+
+			elseif self:_peekAccept(Token.Kind.Name) then
+				-- If we see a name, it could either be the key of a value
+				-- in the table, or just be a variable.
+				local name = self:_accept(Token.Kind.Name)
+
+				-- name = exp
+				if self:_accept(Token.Kind.Equals) then
+					local value = self:parseExp()
+					table.insert(fields, { name, value })
+
+				-- name
+				else
+					table.insert(fields, name)
+				end
+			end
+
+			-- TODO: Accept a semi-colon or comma here. Also, how will we
+			-- ensure the user placed a semi-colon or comma before the next
+			-- field?
+		end
+
+		return AstNode.fromArray(AstNode.Kind.TableConstructor, fields)
 	end
 end
 
