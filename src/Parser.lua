@@ -58,63 +58,79 @@ end
 
 function Parser:parseStat()
 	-- Do-block parser.
-	if self:_accept(TokenKind.DO) then
+	if self:_accept(TokenKind.Do) then
 		local body = self:parseBlock()
-		self:_expect(TokenKind.END)
-		return AstNode.new(AstNode.Kind.DO_BLOCK, body)
+		self:_expect(TokenKind.End)
+		return AstNode.new(AstNode.Kind.DoBlock, body)
 	end
 
 	-- While-loop parser.
-	if self:_accept(TokenKind.WHILE) then
+	if self:_accept(TokenKind.While) then
 		local condition = self:parseExpr()
-		self:_expect(TokenKind.DO)
+		self:_expect(TokenKind.Dd)
 
 		local body = self:parseBlock()
-		self:_expect(TokenKind.END)
+		self:_expect(TokenKind.End)
 
-		return AstNode.new(AstNode.Kind.WHILE_LOOP condition, body)
+		return AstNode.new(AstNode.Kind.WhileLoop condition, body)
 	end
 
 	-- Repeat-until loop parser.
 	-- Essentially the same as the while-loop parser, except it expects
 	-- a `until` instead of `do`.
-	if self:_accept(Token.Kind.REPEAT) then
+	if self:_accept(Token.Kind.Repeat) then
 		local condition = self:parseExpr()
-		self:_expect(TokenKind.UNTIL)
+		self:_expect(TokenKind.Until)
 
 		local body = self:parseBlock()
-		self:_expect(TokenKind.END)
+		self:_expect(TokenKind.End)
 
-		return AstNode.new(AstNode.Kind.REPEAT_LOOP condition, body)
+		return AstNode.new(AstNode.Kind.RepeatLoop condition, body)
 	end
 
 	-- If-block parser.
-	if self:_accept(Token.Kind.IF) then
+	if self:_accept(Token.Kind.If) then
 		local ifCondition = self:parseExpr()
-		self:_expect(TokenKind.THEN)
+		self:_expect(TokenKind.Then)
 
 		local thenBlock = self:parseBlock()
 		local blocks = { { ifCondition, thenBlock }  }
 
-		while self:_accept(Token.Kind.ELSEIF) do
+		while self:_accept(Token.Kind.ElseIf) do
 			local elseIfCondition = self:parseExpr()
-			self:_expect(TokenKind.THEN)
+			self:_expect(TokenKind.Then)
 			table.insert(blocks, { elseIfCondition, self:parseBlock() })
 		end
 
-		if self:_accept(Token.Kind.ELSE) then
-			local elseCondition = self:parseExpr()
-			self:_expect(TokenKind.THEN)
+		if self:_accept(Token.Kind.Else) then
 			table.insert(blocks, self:parseBlock())
 		end
 
-		self:_accept(Token.Kind.END)
+		self:_accept(Token.Kind.End)
 		-- Each block is in the block array (in order)
 		-- Else-if and if statements are stored as an array containing
 		-- their condition and block. Then statements are just stored
 		-- as just their block.
-		return AstNode.new(AstNode.Kind.IF_STAT, table.unpack(blocks))
+		return AstNode.new(AstNode.Kind.IfStat, table.unpack(blocks))
 	end
+end
+
+function Parser:isLastStat(stat)
+	return stat.kind == AstNode.Kind.Break
+		or stat.Kind == AstNode.Kind.Continue
+		or stat.kind == AstNode.Kind.Break
+		or stat.kind == AstNode.Kind.Return
+end
+
+function Parser:parseBlock()
+	local stats = {}
+	local stat
+	repeat
+		stat = self:parseStat()
+		table.insert(stats, stat)
+		self:_accept(Token.Kind.SEMI)
+	until not self:isLastStat(stat)
+	return stat
 end
 
 --[[
