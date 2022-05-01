@@ -125,12 +125,14 @@ end
 function Parser:parseBlock()
 	local stats = {}
 	local stat
+
 	repeat
 		stat = self:parseStat()
 		table.insert(stats, stat)
 		self:_accept(Token.Kind.SEMI)
 	until not self:isLastStat(stat)
-	return stat
+
+	return AstNode.new(AstNode.Kind.Block, table.unpack(stats))
 end
 
 --[[
