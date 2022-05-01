@@ -16,4 +16,8 @@ function Token.new(tokenKind, position, value)
 	return self
 end
 
+function Token.is(object)
+	return type(object) == "table" and getmetatable(object) == Token
+end
+
 return Token

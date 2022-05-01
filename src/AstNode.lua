@@ -15,4 +15,8 @@ function AstNode.new(nodeKind, ...)
 	return self
 end
 
+function AstNode.is(object)
+	return type(object) == "table" and getmetatable(object) == AstNode
+end
+
 return AstNode
