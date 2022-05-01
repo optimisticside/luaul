@@ -79,7 +79,7 @@ function Parser:parseStmt()
 	end
 
 	-- If-block parser.
-	if self:_peekAccept(Token.Kind.IF) then
+	if self:_accept(Token.Kind.IF) then
 		local condition = self:parseExpr()
 		self:_expect(TokenKind.THEN)
 
