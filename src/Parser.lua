@@ -78,6 +78,49 @@ function Parser:_expect(tokenKind)
 	return token
 end
 
+function Parser:parseSimpleExp()
+	-- TODO: Simple things like this can be made into a table
+	-- of tokens and their respective ast-nodes.
+	if self:_accept(Token.Kind.True) then
+		return AstNode.new(AstNode.Kind.True)
+	end
+
+	if self:_accept(Token.Kind.False) then
+		return AstNode.new(AstNode.Kind.False)
+	end
+
+	if self:_accept(Token.Kind.Nil) then
+		return AstNode.new(AstNode.Kind.Nil)
+	end
+
+	if self:_accept(Token.Kind.Dot3) then
+		return AstNode.new(AstNode.Kind.Dot3)
+	end
+end
+
+function Parser:parsePrefixExp()
+	if self:_accept(Token.Kind.LeftParen) then
+		local exp = self:parseExp()
+		self:_expect(Token.Kind.RightParen)
+		return exp
+	end
+
+	-- TODO: Prefix expressions can also be function calls and variables,
+	-- and parsing the two can be hard.
+end
+
+function Parser:parseFunctionCall()
+	local prefixExp = self:parsePrefixExp()
+
+	if self:_accept(Token.Kind.Colon) then
+		local name = self:parseName()
+		prefixExp = AstNode.new(AstNode.Kind.Colon, prefixExp, name)
+	end
+
+	local funcArgs = self:parseFuncArgs()
+	return AstNode.new(AstNode.Kind.FunctionCall, prefixExp, funcArgs)
+end
+
 function Parser:parseStat()
 	-- Do-block parser.
 	if self:_accept(Token.Kind.Do) then
@@ -88,7 +131,7 @@ function Parser:parseStat()
 
 	-- While-loop parser.
 	if self:_accept(Token.Kind.While) then
-		local condition = self:parseExpr()
+		local condition = self:parseExp()
 		self:_expect(Token.Kind.Do)
 
 		local body = self:parseBlock()
@@ -101,7 +144,7 @@ function Parser:parseStat()
 	-- Essentially the same as the while-loop parser, except it expects
 	-- a `until` instead of `do`.
 	if self:_accept(Token.Kind.Repeat) then
-		local condition = self:parseExpr()
+		local condition = self:parseExp()
 		self:_expect(Token.Kind.Until)
 
 		local body = self:parseBlock()
@@ -112,14 +155,14 @@ function Parser:parseStat()
 
 	-- If-block parser.
 	if self:_accept(Token.Kind.If) then
-		local ifCondition = self:parseExpr()
+		local ifCondition = self:parseExp()
 		self:_expect(Token.Kind.Then)
 
 		local thenBlock = self:parseBlock()
 		local blocks = { { ifCondition, thenBlock }  }
 
 		while self:_accept(Token.Kind.ElseIf) do
-			local elseIfCondition = self:parseExpr()
+			local elseIfCondition = self:parseExp()
 			self:_expect(Token.Kind.Then)
 			table.insert(blocks, { elseIfCondition, self:parseBlock() })
 		end
@@ -130,10 +173,10 @@ function Parser:parseStat()
 
 		self:_accept(Token.Kind.End)
 		-- Each block is in the block array (in order)
-		-- Else-if and if statements are stored as an array containing
-		-- their condition and block. Then statements are just stored
+		-- `elseif` and `if` statements are stored as an array containing
+		-- their condition and block. `then` statements are just stored
 		-- as just their block.
-		return AstNode.new(AstNode.Kind.IfStat, table.unpack(blocks))
+		return AstNode.fromArray(AstNode.Kind.IfStat, blocks)
 	end
 end
 
@@ -147,14 +190,16 @@ function Parser:parseBlock()
 		self:_accept(Token.Kind.SEMI)
 	until not self:isLastStat(stat)
 
-	return AstNode.new(AstNode.Kind.Block, table.unpack(stats))
+	return AstNode.fromArray(AstNode.Kind.Block, stats)
 end
 
 --[[
 	Main parsing routine. Parses a chunk of luau code.
 --]]
 function Parser:parseChunk()
-	return self:parseBlock()
+	local root = self:parseBlock()
+	self.result = root
+	return root
 end
 
 return Parser

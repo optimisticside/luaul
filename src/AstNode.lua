@@ -5,14 +5,18 @@
 local AstNode = {}
 AstNode.__index = AstNode
 
-function AstNode.new(nodeKind, ...)
+function AstNode.fromArray(nodeKind, children)
 	local self = {}
 	setmetatable(self, AstNode)
 
 	self.kind = nodeKind
-	self.children = table.pack(...)
+	self.children = children
 
 	return self
+end
+
+function AstNode.new(nodeKind, ...)
+	return AstNode.fromArray(nodeKind, table.pack(...))
 end
 
 function AstNode.is(object)
