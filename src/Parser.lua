@@ -146,28 +146,29 @@ function Parser:parsePrefixExpr()
 end
 
 function Parser:parseFunctionArgs()
-	if self:_accept(Token.Kind.LeftParen) then
-		local args = {}
-
-		while not self:_accept(Token.Kind.RightParen) do
-			if #args then
-				self:_expect(Token.Kind.Comma)
-			end
-
-			table.insert(args, self:parseExpr())
-		end
-
-		return args
-	end
-
 	if self:_peekAcept(Token.Kind.LeftBrace) then
 		return { self:parseTableConstructor() }
 	end
 
-	-- TODO: Add string acceptance here. Also, shouldn't we wait until the very
-	-- end (after checking for a left-brace and string) before parsing
-	-- traditional function arguments with parentheses, so we can expect them
-	-- and throw an error if they aren't provided.
+	if self:_peekAccept(Token.Kind.String) then
+		return { self:_accept(Token.Kind.String) }
+	end
+
+	-- Since we've already checked for all other forms of providing function
+	-- arguments, we can expect the user to provide normal function arguments
+	-- with parentheses.
+	self:_expect(Token.Kind.LeftParen)
+	local args = {}
+
+	while not self:_accept(Token.Kind.RightParen) do
+		if #args then
+			self:_expect(Token.Kind.Comma)
+		end
+
+		table.insert(args, self:parseExpr())
+	end
+
+	return args
 end
 
 function Parser:parsePrimaryExpr()
