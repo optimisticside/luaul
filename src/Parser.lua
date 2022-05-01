@@ -67,12 +67,12 @@ function Parser:parseStat()
 	-- While-loop parser.
 	if self:_accept(TokenKind.While) then
 		local condition = self:parseExpr()
-		self:_expect(TokenKind.Dd)
+		self:_expect(TokenKind.Do)
 
 		local body = self:parseBlock()
 		self:_expect(TokenKind.End)
 
-		return AstNode.new(AstNode.Kind.WhileLoop condition, body)
+		return AstNode.new(AstNode.Kind.WhileLoop, condition, body)
 	end
 
 	-- Repeat-until loop parser.
