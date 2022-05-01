@@ -1,4 +1,4 @@
--- OptimisticSIde
+-- OptimisticSide
 -- 5/1/2022
 -- Luau parser
 
@@ -9,6 +9,37 @@ local Token = require(_VERSION == "Luau" and script.Parent.Token or "./Token.lua
 
 local Parser = {}
 Parser.__index = Parser
+
+Parser.SimpleTokens = {
+	[Token.Kind.True] = AstNode.Kind.True,
+	[Token.Kind.False] = AstNode.Kind.False,
+	[Token.Kind.Nil] = AstNode.Kind.Nil,
+	[Token.Kind.Dot3] = AstNode.Kind.Dot3,
+}
+
+Parser.UnaryOpers = {
+	[Token.Kind.Hashtag] = AstNode.Kind.Len,
+	[Token.Kind.ReservedNot] = AstNode.Kind.Not,
+	[Token.Kind.Minus] = AstNode.Kind.Minus
+}
+
+Parser.BinaryOpers = {
+	[Token.Kind.Plus] = AstNode.Kind.Add,
+	[Token.Kind.Minus] = AstNode.Kind.Sub,
+	[Token.Kind.Star] = AstNode.Kind.Mul,
+	[Token.Kind.Slash] = AstNode.Kind.Div,
+	[Token.Kind.Percent] = AstNode.Kind.Mod,
+	[Token.Kind.Caret] = AstNode.Kind.Pow,
+	[Token.Kind.Dot2] = AstNode.Kind.Concat,
+	[Token.Kind.NotEqual] = AstNode.Kind.CompareNe,
+	[Token.Kind.Equal] = AstNode.Kind.CompareEq,
+	[Token.Kind.LessThan] = AstNode.Kind.CompareLt,
+	[Token.Kind.LessEqual] = AstNode.Kind.CompareLe,
+	[Token.Kind.GreaterThan] = AstNode.Kind.CompareGt,
+	[Token.Kind.GreaterEqual] = AstNode.Kind.CompareGe,
+	[Token.Kind.ReservedAnd] = AstNode.Kind.And,
+	[Token.Kind.ReservedOr] = AstNode.Kind.Or,
+}
 
 function Parser.new(tokens)
 	local self = {}
@@ -23,6 +54,19 @@ end
 
 function Parser.is(object)
 	return type(object) == "table" and getmetatable(object) == Parser
+end
+
+--[[
+	Creates an operator parsing routine, from a generic function.
+
+	This is done to avoid repeating code, and will return a function that will
+	parse the provided operators, and call the provided subparser to get the
+	operands.
+]]
+function Parser.useGeneric(generic, subParser, operators)
+	return function(self)
+		return generic(self, operators, subParser)
+	end
 end
 
 --[[
@@ -78,6 +122,86 @@ function Parser:_expect(tokenKind)
 	return token
 end
 
+function Parser:genericBinary(tokens, subParser)
+	local left = subParser()
+
+	if self:_reachedEnd() then
+		return left
+	end
+
+	while true do
+		local token = nil
+		for _, possibleToken in ipairs(tokens) do
+			if self:_accept(possibleToken) then
+				token = possibleToken
+			end
+		end
+
+		if not token then
+			break
+		end
+
+		local right = subParser()
+		local nodeKind = Parser.BinaryOpers[token]
+		left = AstNode.new(nodeKind, left, right)
+	end
+
+	return left
+end
+
+function Parser:genericPrefix(tokens, subParser)
+	local left = subParser()
+	local stack = {}
+
+	if not left then
+		return
+	end
+
+	while true do
+		local token = nil
+		for _, possibleToken in ipairs(tokens) do
+			if self:_accept(possibleToken) then
+				token = possibleToken
+			end
+		end
+
+		if token then
+			break
+		end
+
+		table.insert(stack, token)
+	end
+
+	for i = #stack, 1, -1 do
+		local nodeKind = Parser.UnaryOpers[stack[i]]
+		left = AstNode.new(nodeKind, left)
+	end
+
+	return left
+end
+
+function Parser:genericPostfix(tokens, subParser)
+	local left = subParser()
+
+	while true do
+		local token = nil
+		for _, possibleToken in ipairs(tokens) do
+			if self:_accept(possibleToken) then
+				token = possibleToken
+			end
+		end
+
+		if not token then
+			break
+		end
+
+		local nodeKind = Parser.UnaryOpers[token]
+		left = AstNode.new(nodeKind, left)
+	end
+
+	return left
+end
+
 function Parser:parseTableConstructor()
 	local fields = {}
 
@@ -87,7 +211,7 @@ function Parser:parseTableConstructor()
 			local key = self:parseExpr()
 			self:_expect(Token.Kind.RightBracket)
 
-			self:_expect(Token.Kind.Equals)
+			self:_expect(Token.Kind.Equal)
 			local value = self:parseExpr()
 			table.insert(fields, { key, value })
 
@@ -97,7 +221,7 @@ function Parser:parseTableConstructor()
 			local name = self:_accept(Token.Kind.Name)
 
 			-- name = exp
-			if self:_accept(Token.Kind.Equals) then
+			if self:_accept(Token.Kind.Equal) then
 				local value = self:parseExpr()
 				table.insert(fields, { name, value })
 
@@ -118,13 +242,7 @@ end
 function Parser:parseSimpleExpr()
 	-- Parser for simple tokens, where the corresponding node
 	-- can be found through a table.
-	local simpleTokens = {
-		[Token.Kind.True] = AstNode.Kind.True,
-		[Token.Kind.False] = AstNode.Kind.False,
-		[Token.Kind.Nil] = AstNode.Kind.Nil,
-		[Token.Kind.Dot3] = AstNode.Kind.Dot3,
-	}
-	local nodeKind = simpleTokens[self._token.kind]
+	local nodeKind = Parser.SimpleTokens[self._token.kind]
 	if nodeKind then
 		return AstNode.new(nodeKind)
 	end
@@ -204,6 +322,9 @@ function Parser:parsePrimaryExpr()
 	end
 
 	return expr
+end
+
+function Parser:parseExpr()
 end
 
 function Parser:parseStat()
