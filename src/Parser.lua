@@ -345,6 +345,64 @@ function Parser:parsePrefixExpr()
 	-- TODO: Parse name expression.
 end
 
+-- luacheck: ignore
+function Parser:parseName(context)
+	-- TODO: Do this...
+end
+
+function Parser:parseSimpleTypeAnnotation()
+	-- We should have a better system for builin types that don't rely
+	-- on the actual keywords, like `nil` and `true`.
+	if self:_accept(Token.Kind.ReservedNil) then
+		return AstNode.new(AstNode.Kind.TypeReference, AstNode.Kind.Nil)
+	end
+
+	if self:_accept(Token.Kind.ReservedTrue) then
+		return AstNode.new(AstNode.Kind.SingletonBool, AstNode.Kind.True)
+	end
+
+	if self:_accept(Token.Kind.ReservedFalse) then
+		return AstNode.new(AstNode.Kind.SingletonBool, AstNode.Kind.False)
+	end
+
+	local stringType = self:_accept(Token.Kind.String)
+	if stringType then
+		return AstNode.new(AstNode.Kind.SingletonString, stringType)
+	end
+
+	if self:_peek(Token.Kind.Name) then
+		local name = self:parseName()
+		local prefix
+
+		-- After looking at Luau's parser, I noticed that it only supports
+		-- one type-field indexing, not multiple.
+		if self:_accept(Token.Kind.Dot) then
+			prefix = name
+			name = self:parseName()
+
+		elseif name.value == "typeof" then
+			self:_expect(Token.Kind.LeftParen)
+			local expr = self:parseExpr()
+
+			self:_expect(Token.Kind.RightParen)
+			return AstNode.new(AstNode.Kind.TypeTypeOf, expr)
+		end
+
+		local hasParameters = false
+		local parameters = {}
+
+		-- We should rename these tokens to be something like:
+		-- Token.Kind.AngleBracketLeft or something, to avoid confusion.
+		if self:_expect(Token.Kind.LessThan) then
+			hasParameters = true
+			parameters = self:parseTypeParams()
+		end
+
+		return AstNode.new(AstNode.Kind.TypeReference,
+			prefix, name, hasParameters, parameters)
+	end
+end
+
 function Parser:parseTypeAnnotation()
 	local parts = { self:parseSimpleTypeAnnotation() }
 	local isIntersection = false
@@ -397,7 +455,7 @@ function Parser:parseAssertionExpr()
 end
 
 function Parser:parseFunctionArgs()
-	if self:_peekAcept(Token.Kind.LeftBrace) then
+	if self:_peek(Token.Kind.LeftBrace) then
 		return { self:parseTableConstructor() }
 	end
 
