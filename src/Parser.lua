@@ -481,7 +481,7 @@ function Parser:parseBlock()
 	repeat
 		stat = self:parseStat()
 		table.insert(stats, stat)
-		self:_accept(Token.Kind.SEMI)
+		self:_accept(Token.Kind.SemiColon)
 	until not Parser.isLastStat(stat)
 
 	return AstNode.fromArray(AstNode.Kind.Block, stats)
