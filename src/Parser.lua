@@ -17,6 +17,13 @@ Parser.SimpleTokens = {
 	[Token.Kind.Dot3] = AstNode.Kind.Dot3,
 }
 
+Parser.CompountOpers = {
+	[Token.Kind.PlusEqual] = AstNode.Kind.Add,
+	[Token.Kind.MinusEqual] = AstNode.Kind.Sub,
+	[Token.Kind.StarEqual] = AstNode.Kind.Mul,
+	[Token.Kind.PlashEqual] = AstNode.Kind.Div,
+}
+
 Parser.UnaryOpers = {
 	[Token.Kind.Hashtag] = AstNode.Kind.Len,
 	[Token.Kind.ReservedNot] = AstNode.Kind.Not,
@@ -530,6 +537,51 @@ function Parser:parseStat()
 
 			local values = self:parseExprList()
 			return AstNode.new(AstNode.Kind.Local, bindings, values)
+		end
+	end
+
+	if self:_accept(Token.Kind.ReservedReturn) then
+		local exprList = self:parseExprList()
+		return AstNode.new(AstNode.Kind.Return, exprList)
+	end
+
+	if self:_accept(Token.Kind.Break) then
+		return AstNode.new(AstNode.Kind.Break)
+	end
+
+	local expr = self:parsePrimaryExpr()
+	if expr.kind == AstNode.Kind.FunctionCall then
+		return expr
+	end
+
+	if self:_peek(Token.Kind.Comma) or self:_peek(Token.Kind.Equal) then
+		return self:parseAssignment(expr)
+	end
+
+	local compoundOper = Parser.CompountOpers[self._token.kind]
+	if compoundOper then
+		return self:parseCompoundAssignment()
+	end
+
+	if expr.kind == AstNode.Kind.Iden then
+		if self._options.allowTypeAnnotations then
+			-- I did not know that `type` was actually an operator until now.
+			if expr.value == "type" then
+				return self:parseTypeAlias(expr, false)
+
+			elseif
+				expr.value == "export"
+				and self._token.kind == Token.Kind.Iden
+				and self._token.value == "type"
+			then
+				return self:parseTypeAlias(expr, true)
+			end
+		end
+
+		-- I took a look at Luau's parser in C++ and apparently it does this
+		-- instead of making the lexer detect it as a continue keyword.
+		if self._options.supportContinueStatement and expr.value == "continue" then
+			return AstNode.new(AstNode.Kind.Continue)
 		end
 	end
 end
