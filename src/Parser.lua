@@ -11,9 +11,9 @@ local Parser = {}
 Parser.__index = Parser
 
 Parser.SimpleTokens = {
-	[Token.Kind.True] = AstNode.Kind.True,
-	[Token.Kind.False] = AstNode.Kind.False,
-	[Token.Kind.Nil] = AstNode.Kind.Nil,
+	[Token.Kind.ReservedTrue] = AstNode.Kind.True,
+	[Token.Kind.ReservedFalse] = AstNode.Kind.False,
+	[Token.Kind.ReservedNil] = AstNode.Kind.Nil,
 	[Token.Kind.Dot3] = AstNode.Kind.Dot3,
 }
 
