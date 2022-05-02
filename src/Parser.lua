@@ -46,7 +46,7 @@ function Parser.new(tokens, advancer)
 	setmetatable(self, Parser)
 
 	self._tokens = tokens
-	self._advancer = advancer or next(tokens)
+	self._advancer = advancer or next
 	self._token = self._advancer(tokens, nil)
 
 	return self
