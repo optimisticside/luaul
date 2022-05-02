@@ -344,6 +344,16 @@ function Parser:parsePrefixExpr()
 	-- TODO: Parse name expression.
 end
 
+function Parser:parseExprList()
+	local exprs = {}
+
+	repeat
+		table.insert(exprs, self:parseExpr())
+	until not self:_accept(Token.Type.Comma)
+
+	return exprs
+end
+
 -- luacheck: ignore
 function Parser:parseName(context)
 	-- TODO: Do this...
