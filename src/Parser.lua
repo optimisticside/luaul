@@ -183,6 +183,20 @@ function Parser:_expect(tokenKind, context)
 	return token
 end
 
+--[[
+	Helper function to parse things separate by a delimiter token.
+	This is used for expression lists, and other things like that.
+]]
+function Parser:_parseList(subParser, delimiter)
+	local values = {}
+
+	repeat
+		table.insert(values, subParser(self))
+	until not self:_accept(delimiter)
+
+	return values
+end
+
 function Parser:genericBinary(tokens, subParser)
 	local left = subParser()
 
@@ -345,13 +359,11 @@ function Parser:parsePrefixExpr()
 end
 
 function Parser:parseExprList()
-	local exprs = {}
+	return self:_parseList(Parser.parseExpr, Token.Kind.Comma)
+end
 
-	repeat
-		table.insert(exprs, self:parseExpr())
-	until not self:_accept(Token.Type.Comma)
-
-	return exprs
+function Parser:parseBindingList()
+	return self:_parseList(Parser.parserBinding, Token.Kind.Comma)
 end
 
 -- luacheck: ignore
@@ -534,16 +546,11 @@ function Parser:parseCompoundAssignment(left, oper)
 end
 
 function Parser:parseAssignment(left)
-	local values = {}
-
 	if not Parser.isExprLValue(left) then
 		return self:_error("Assigned expression must be a variable or field")
 	end
 
-	repeat
-		table.insert(values, self:parseSimpleExpr())
-	until not self:_accept(Token.Type.Comma)
-
+	local values = self:_parseList(Parser.parseSimpleExpr, Token.Kind.Comma)
 	return AstNode.new(AstNode.Kind.Assign, left, values)
 end
 
@@ -632,11 +639,7 @@ function Parser:parseStat()
 		-- For-in loop (this is what you do when you use the pairs function).
 		-- for (binding)+ in (expr)+ do block end
 		else
-			local bindings = {}
-
-			repeat
-				table.insert(bindings, self:parseBinding())
-			until not self:_accept(Token.Kind.Comma)
+			local bindings = self:parseBindingList()
 
 			self:_expect(Token.Kind.ReservedIn)
 			local values = self:parseExprList()
