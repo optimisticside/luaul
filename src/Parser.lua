@@ -105,6 +105,16 @@ function Parser:_accept(tokenKind)
 end
 
 --[[
+	Peeks for a token and returns it, but does not actually consume it.
+]]
+function Parser:_peek(tokenKind)
+	local token = self._token
+	if token and token.kind == tokenKind then
+		return token
+	end
+end
+
+--[[
 	Expects to read a certain type of token. If this token is not found,
 	then it will throw a parse-error.
 ]]
@@ -235,7 +245,7 @@ function Parser:parseTableConstructor()
 			local value = self:parseExpr()
 			table.insert(fields, { key, value })
 
-		elseif self:_peekAccept(Token.Kind.Name) then
+		elseif self:_peek(Token.Kind.Name) then
 			-- If we see a name, it could either be the key of a value
 			-- in the table, or just be a variable.
 			local name = self:_accept(Token.Kind.Name)
@@ -268,7 +278,7 @@ function Parser:parseSimpleExpr()
 	end
 
 	-- Table constructor parser.
-	if self:_peekAccept(Token.Kind.LeftBrace) then
+	if self:_peek(Token.Kind.LeftBrace) then
 		return self:parseTableConstructor()
 	end
 end
@@ -339,7 +349,7 @@ function Parser:parseFunctionArgs()
 		return { self:parseTableConstructor() }
 	end
 
-	if self:_peekAccept(Token.Kind.String) then
+	if self:_peek(Token.Kind.String) then
 		return { self:_accept(Token.Kind.String) }
 	end
 
@@ -381,9 +391,9 @@ function Parser:parsePrimaryExpr()
 
 		-- prefixexpr(functionargs) | prefixexpr{tableconstructor} | prefixexpr string
 		elseif
-			self:_peekAccept(Token.Kind.LeftParen)
-			or self:_peekAccept(Token.Kind.LeftBrace)
-			or self:_peekAccept(Token.Kind.String)
+			self:_peek(Token.Kind.LeftParen)
+			or self:_peek(Token.Kind.LeftBrace)
+			or self:_peek(Token.Kind.String)
 		then
 			expr = AstNode.new(AstNode.Kind.FunctionCall, expr, self:parseFunctionArgs())
 
