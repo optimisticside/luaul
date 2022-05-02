@@ -41,13 +41,13 @@ Parser.BinaryOpers = {
 	[Token.Kind.ReservedOr] = AstNode.Kind.Or,
 }
 
-function Parser.new(tokens)
+function Parser.new(tokens, advancer)
 	local self = {}
 	setmetatable(self, Parser)
 
 	self._tokens = tokens
-	self._token = self._tokens[1]
-	self._position = 1
+	self._advancer = advancer or next(tokens) -- TODO: This might be wrong.
+	self._token = self._advancer(self._token)
 
 	return self
 end
@@ -91,6 +91,13 @@ end
 -- luacheck: ignore self
 function Parser:_error(formatString, ...)
 	error(formatString:format(...))
+end
+
+--[[
+	Advances to the next token.
+]]
+function Parser:_advance()
+	self._token = self._advancer(self._token)
 end
 
 --[[
