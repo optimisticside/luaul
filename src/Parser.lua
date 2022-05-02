@@ -662,6 +662,9 @@ function Parser:parseStat()
 		if self._options.supportContinueStatement and expr.value == "continue" then
 			return AstNode.new(AstNode.Kind.Continue)
 		end
+
+		-- TODO: Find out what the `declare` keyword is so that we can add
+		-- support for it.
 	end
 end
 
