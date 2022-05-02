@@ -279,7 +279,7 @@ function Parser:parseTableConstructor()
 	local fields = {}
 
 	while not self:_accept(Token.Kind.RightBrace) do
-		-- [exp] = exp
+		-- [expr] = expr
 		if self:_accept(Token.Kind.LeftBracket) then
 			local key = self:parseExpr()
 			self:_expect(Token.Kind.RightBracket)
@@ -293,7 +293,7 @@ function Parser:parseTableConstructor()
 			-- in the table, or just be a variable.
 			local name = self:_accept(Token.Kind.Name)
 
-			-- name = exp
+			-- name = expr
 			if self:_accept(Token.Kind.Equal) then
 				local value = self:parseExpr()
 				table.insert(fields, { name, value })
