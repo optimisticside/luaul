@@ -161,17 +161,26 @@ end
 	Expects to read a certain type of token. If this token is not found,
 	then it will throw a parse-error.
 ]]
-function Parser:_expect(tokenKind)
+function Parser:_expect(tokenKind, context)
 	local token = self:_accept(tokenKind)
+
 	if not token or token.kind ~= tokenKind then
-		self:_error(
-			"Expected %s, got %s at %s",
-			Token.kindString(tokenKind),
-			Token.kindString(token.kind),
-			token.position
-		)
-		return
+		if context then
+			self:_error(
+				"Expected %s when parsing %s, got %s",
+				Token.kindString(tokenKind),
+				context,
+				Token.kindString(token.kind)
+			)
+		else
+			self:_error(
+				"Expected %s, got %s",
+				Token.kindString(tokenKind),
+				Token.kindString(token.kind)
+			)
+		end
 	end
+
 	return token
 end
 
@@ -571,6 +580,24 @@ function Parser:parseStat()
 			self:_expect(Token.Kind.ReservedEnd)
 			return AstNode.new(AstNode.Kind.ForInLoop, bindings, values, block)
 		end
+	end
+
+	-- Function statement parser.
+	-- name.name...name.name:name functionbody
+	-- TODO: Make this, along with other statement parsers separate functions.
+	if self:_accept(Token.Kind.ReservedFunction) then
+		local expr = self:parseName()
+
+		while self:_accept(Token.Kind.Dot) do
+			expr = AstNode.new(AstNode.Kind.IndexName, expr, self:parseName())
+		end
+
+		if self:_accept(Token.Kind.Colon) then
+			expr = AstNode.new(AstNode.Kind.SelfIndexName, expr, self:parseName())
+		end
+
+		local body = self:parseFunctionBody()
+		return AstNode.new(AstNode.Kind.FunctionStat, expr, body)
 	end
 
 	if self:_accept(Token.Kind.ReservedLocal) then
