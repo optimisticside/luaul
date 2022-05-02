@@ -284,7 +284,43 @@ function Parser:parsePrefixExpr()
 end
 
 function Parser:parseTypeAnnotation()
-	-- TODO: Do this later...
+	local parts = { self:parseSimpleTypeAnnotation() }
+	local isIntersection = false
+	local isUnion = false
+
+	while true do
+		if self:_accept(Token.Kind.Pipe) then
+			table.insert(parts, self:parseSimpleTypeAnnotation())
+			isUnion = true
+
+		elseif self:_accept(Token.Kind.And) then
+			table.insert(parts, self:parseSimpleTypeAnnotation())
+			isIntersection = true
+
+		-- luacheck: ignore
+		elseif self:_accept(Token.Kind.QuestionMark) then
+			-- TODO: Add support for this.
+
+		else
+			break
+		end
+	end
+
+	if isUnion and isIntersection then
+		return self:_error("Cannot combine unions and intersections")
+	end
+
+	if isUnion then
+		return AstNode.fromArray(AstNode.Kind.TypeUnion, parts)
+	end
+
+	if isIntersection then
+		return AstNode.fromArray(AstNode.Kind.TypeIntersection, parts)
+	end
+
+	-- If we didn't have an intersection or a union, then we can assume we
+	-- only had 1 element in the array.
+	return parts[1]
 end
 
 function Parser:parseAssertionExpr()
