@@ -48,11 +48,18 @@ Parser.BinaryOpers = {
 	[Token.Kind.ReservedOr] = AstNode.Kind.Or,
 }
 
-function Parser.new(tokens, advancer)
+Parser.DefaultOptions = {
+	allowTypeAnnotations = true,
+	supportContinueStatement = true,
+	captureComments = false,
+}
+
+function Parser.new(tokens, options, advancer)
 	local self = {}
 	setmetatable(self, Parser)
 
 	self._tokens = tokens
+	self._options = Parser._parseOptions(options)
 	self._advancer = advancer or next
 	self._token = self._advancer(tokens, nil)
 
@@ -73,6 +80,16 @@ end
 function Parser.useGeneric(generic, subParser, operators)
 	return function(self)
 		return generic(self, operators, subParser)
+	end
+end
+
+--[[
+	Parses the parser's options and insertes defaults for keys that were not
+	provided by the user.
+]]
+function Parser.parseOptions(options)
+	for option, default in pairs(Parser.DefaultOptions) do
+		options[option] = options[option] == nil and default or options[option]
 	end
 end
 
