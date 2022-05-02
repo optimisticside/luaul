@@ -414,19 +414,19 @@ end
 
 function Parser:parseStat()
 	-- Do-block parser.
-	if self:_accept(Token.Kind.Do) then
+	if self:_accept(Token.Kind.ReservedDo) then
 		local body = self:parseBlock()
-		self:_expect(Token.Kind.End)
+		self:_expect(Token.Kind.ReservedEnd)
 		return AstNode.new(AstNode.Kind.DoBlock, body)
 	end
 
 	-- While-loop parser.
-	if self:_accept(Token.Kind.While) then
+	if self:_accept(Token.Kind.ReservedWhile) then
 		local condition = self:parseExpr()
-		self:_expect(Token.Kind.Do)
+		self:_expect(Token.Kind.ReservedDo)
 
 		local body = self:parseBlock()
-		self:_expect(Token.Kind.End)
+		self:_expect(Token.Kind.ReservedEnd)
 
 		return AstNode.new(AstNode.Kind.WhileLoop, condition, body)
 	end
@@ -434,35 +434,35 @@ function Parser:parseStat()
 	-- Repeat-until loop parser.
 	-- Essentially the same as the while-loop parser, except it expects
 	-- a `until` instead of `do`.
-	if self:_accept(Token.Kind.Repeat) then
+	if self:_accept(Token.Kind.ReservedRepeat) then
 		local condition = self:parseExpr()
-		self:_expect(Token.Kind.Until)
+		self:_expect(Token.Kind.ReservedUntil)
 
 		local body = self:parseBlock()
-		self:_expect(Token.Kind.End)
+		self:_expect(Token.Kind.ReservedEnd)
 
 		return AstNode.new(AstNode.Kind.RepeatLoop, condition, body)
 	end
 
 	-- If-block parser.
-	if self:_accept(Token.Kind.If) then
+	if self:_accept(Token.Kind.ReservedIf) then
 		local ifCondition = self:parseExpr()
-		self:_expect(Token.Kind.Then)
+		self:_expect(Token.Kind.ReservedThen)
 
 		local thenBlock = self:parseBlock()
 		local blocks = { { ifCondition, thenBlock }  }
 
-		while self:_accept(Token.Kind.ElseIf) do
+		while self:_accept(Token.Kind.ReservedElseIf) do
 			local elseIfCondition = self:parseExpr()
-			self:_expect(Token.Kind.Then)
+			self:_expect(Token.Kind.ReservedThen)
 			table.insert(blocks, { elseIfCondition, self:parseBlock() })
 		end
 
-		if self:_accept(Token.Kind.Else) then
+		if self:_accept(Token.Kind.ReservedElse) then
 			table.insert(blocks, self:parseBlock())
 		end
 
-		self:_accept(Token.Kind.End)
+		self:_accept(Token.Kind.ReservedEnd)
 		-- Each block is in the block array (in order)
 		-- `elseif` and `if` statements are stored as an array containing
 		-- their condition and block. `then` statements are just stored
@@ -471,10 +471,11 @@ function Parser:parseStat()
 	end
 
 	-- For-loop parser.
-	if self:_accept(Token.Kind.For) then
+	if self:_accept(Token.Kind.ReservedFor) then
 		local binding = self:parseBinding()
 
 		-- Numeric for loop (doesn't have to be numeric, but yeah).
+		-- for binding = expr, expr, expr do block end
 		if self:_accept(Token.Kind.Equal) then
 			local start = self:parseExpr()
 			local finish, step
@@ -487,12 +488,14 @@ function Parser:parseStat()
 				end
 			end
 
-			self:_expect(Token.Kind.Do)
+			self:_expect(Token.Kind.ReservedDo)
 			local block = self:parseBlock()
 
-			self:_expect(Token.Kind.End)
+			self:_expect(Token.Kind.ReservedEnd)
 			return AstNode.new(AstNode.Kind.ForLoop, binding, start, finish, step, block)
 
+		-- For-in loop (this is what you do when you use the pairs function).
+		-- for (binding)+ in (expr)+ do block end
 		else
 			local bindings = {}
 
@@ -500,14 +503,33 @@ function Parser:parseStat()
 				table.insert(bindings, self:parseBinding())
 			until not self:_accept(Token.Kind.Comma)
 
-			self:_expect(Token.Kind.In)
+			self:_expect(Token.Kind.ReservedIn)
 			local values = self:parseExprList()
 
-			self:_expect(Token.Kind.Do)
+			self:_expect(Token.Kind.ReservedDo)
 			local block = self:parseBlock()
 
-			self:_expect(Token.Kind.End)
+			self:_expect(Token.Kind.ReservedEnd)
 			return AstNode.new(AstNode.Kind.ForInLoop, bindings, values, block)
+		end
+	end
+
+	if self:_accept(Token.Kind.ReservedLocal) then
+		-- Local function defenition.
+		if self:_accept(Token.Kind.ReservedFunction) then
+			local name = self:parseName()
+			local body = self:parseFunctionBody()
+
+			self:_expect(Token.Kind.ReservedEnd)
+			return AstNode.new(AstNode.Kind.LocalFunction, name, body)
+
+		-- Local variable defenitions.
+		else
+			local bindings = self:parseBindingList()
+			self:_expect(Token.Kind.Equal)
+
+			local values = self:parseExprList()
+			return AstNode.new(AstNode.Kind.Local, bindings, values)
 		end
 	end
 end
