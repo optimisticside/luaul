@@ -412,9 +412,6 @@ function Parser:parsePrimaryExpr()
 	return expr
 end
 
-function Parser:parseExpr()
-end
-
 function Parser:parseStat()
 	-- Do-block parser.
 	if self:_accept(Token.Kind.Do) then
@@ -471,6 +468,47 @@ function Parser:parseStat()
 		-- their condition and block. `then` statements are just stored
 		-- as just their block.
 		return AstNode.fromArray(AstNode.Kind.IfStat, blocks)
+	end
+
+	-- For-loop parser.
+	if self:_accept(Token.Kind.For) then
+		local binding = self:parseBinding()
+
+		-- Numeric for loop (doesn't have to be numeric, but yeah).
+		if self:_accept(Token.Kind.Equal) then
+			local start = self:parseExpr()
+			local finish, step
+
+			if self:_accept(Token.Kind.Comma) then
+				finish = self:parseExpr()
+
+				if self:_accept(Token.Kind.Comma) then
+					step = self:parseExpr()
+				end
+			end
+
+			self:_expect(Token.Kind.Do)
+			local block = self:parseBlock()
+
+			self:_expect(Token.Kind.End)
+			return AstNode.new(AstNode.Kind.ForLoop, binding, start, finish, step, block)
+
+		else
+			local bindings = {}
+
+			repeat
+				table.insert(bindings, self:parseBinding())
+			until not self:_accept(Token.Kind.Comma)
+
+			self:_expect(Token.Kind.In)
+			local values = self:parseExprList()
+
+			self:_expect(Token.Kind.Do)
+			local block = self:parseBlock()
+
+			self:_expect(Token.Kind.End)
+			return AstNode.new(AstNode.Kind.ForInLoop, bindings, values, block)
+		end
 	end
 end
 
