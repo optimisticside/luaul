@@ -102,7 +102,6 @@ end
 function Parser.isLastStat(stat)
 	return stat.kind == AstNode.Kind.Break
 		or stat.Kind == AstNode.Kind.Continue
-		or stat.kind == AstNode.Kind.Break
 		or stat.kind == AstNode.Kind.Return
 end
 
