@@ -298,9 +298,10 @@ Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr
 Parser.parseExpr = Parser.parseOrExpr
 
 function Parser:parseTableConstructor()
+	local canContinue = true
 	local fields = {}
 
-	while not self:_accept(Token.Kind.RightBrace) do
+	while canContinue and not self:_accept(Token.Kind.RightBrace) do
 		-- [expr] = expr
 		if self:_accept(Token.Kind.LeftBracket) then
 			local key = self:parseExpr()
@@ -326,9 +327,7 @@ function Parser:parseTableConstructor()
 			end
 		end
 
-		-- TODO: Accept a semi-colon or comma here. Also, how will we
-		-- ensure the user placed a semi-colon or comma before the next
-		-- field?
+		canContinue = self:_accept(Token.Kind.Comma) or self:_accept(Token.Kind.SemiColon)
 	end
 
 	return AstNode.fromArray(AstNode.Kind.TableConstructor, fields)
