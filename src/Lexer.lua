@@ -6,7 +6,6 @@
 local Token = require(_VERSION == "Luau" and script.Parent.Token or "./Token.lua")
 -- luacheck: pop
 
-
 local Lexer = {}
 Lexer.__index = Lexer
 

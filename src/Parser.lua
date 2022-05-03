@@ -357,6 +357,17 @@ function Parser:parsePrefixExpr()
 	-- TODO: Parse name expression.
 end
 
+function Parser:parseBinding()
+	local name = self:parseName()
+	local typeAnnotation
+
+	if self:_accept(Token.Kind.Colon) then
+		typeAnnotation = self:parseTypeAnnotation()
+	end
+
+	return AstNode.new(AstNode.Kind.Binding, name, typeAnnotation)
+end
+
 function Parser:parseExprList()
 	return self:_parseList(Parser.parseExpr, Token.Kind.Comma)
 end
