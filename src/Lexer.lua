@@ -34,7 +34,7 @@ Lexer.Reserved = {
 	["while"] = Token.Kind.ReservedWhile,
 }
 
-Lexer.Operators = {
+Lexer.UnsortedOperators = {
 	["+"] = Token.Kind.Plus,
 	["-"] = Token.Kind.Minus,
 	["*"] = Token.Kind.Star,
@@ -49,6 +49,7 @@ Lexer.Operators = {
 	["."] = Token.Kind.Dot,
 	[".."] = Token.Kind.Dot2,
 	["..."] = Token.Kind.Dot3,
+	["->"] = Token.Kind.SkinnyArrow,
 
 	["~="] = Token.Kind.NotEqual,
 	["="] = Token.Kind.Equal,
@@ -81,6 +82,32 @@ function Lexer.is(object)
 end
 
 --[[
+	Parses the operator table and creates an array of subtables,
+	ordered by the length of the operator.
+]]
+function Lexer.sortOperators(operatorTable)
+	local tables = {}
+
+	for operator, token in pairs(operatorTable) do
+		local length = operator:len()
+
+		-- Create tables before if they do not exist.
+		-- TODO: We can greatly improve this system.
+		if not tables[length] then
+			for i = 1, length do
+				if not tables[i] then
+					tables[i] = {}
+				end
+			end
+		end
+
+		tables[length][operator] = token
+	end
+
+	return tables
+end
+
+--[[
 	Peeks at the next character without actually consuming it.
 ]]
 function Lexer:_peek(lookAhead)
@@ -95,15 +122,6 @@ function Lexer:_consume(count)
 	self._position = self._position + (count == nil and 1 or count)
 end
 
-function Lexer:readComment()
-	if self:_accept("--") then
-		-- Block comments can just be parsed as strings.
-		if self:_peek("[") then
-			return self:readLongString()
-		end
-
-
-	end
-end
+Lexer.Operators = Lexer.sortOperators(Lexer.UnsortedOperators)
 
 return Lexer
