@@ -297,6 +297,23 @@ Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompar
 Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr, Token.Kind.Or)
 Parser.parseExpr = Parser.parseOrExpr
 
+function Parser:parseIfElseExpr()
+	local condition = self:parseExpr()
+	self:_expect(Token.Kind.ReservedThen)
+
+	local thenExpr = self:parseExpr()
+	local elseExpr
+
+	if self:_accept(Token.Kind.ReservedElseIf) then
+		elseExpr = self:parseIfElseExpr()
+	else
+		self:_expect(Token.Kind.ReservedElse)
+		elseExpr = self:parseExpr()
+	end
+
+	return AstNode.new(Token.Kind.IfElseExpr, condition, thenExpr, elseExpr)
+end
+
 function Parser:parseTableConstructor()
 	local canContinue = true
 	local fields = {}
@@ -432,6 +449,28 @@ function Parser:parseSimpleTypeAnnotation()
 		return AstNode.new(AstNode.Kind.TypeReference,
 			prefix, name, hasParameters, parameters)
 	end
+
+	-- Table type-annotation parser
+	if self:_accept(Token.Kind.LeftBrace) then
+		local types = {}
+
+		while not self:_accept(Token.Kind.RightBrace) do
+			-- [string]: type
+			if self:_accept(Token.Kind.LeftBrace) then
+				local quotedString = self:_accept(Token.Kind.QuotedString)
+				if quotedString then
+					self:_expect(Token.Kind.RightBracket)
+					self:_expect(Token.Kind.Colon)
+
+					local valueType = self:parseTypeAnnotation()
+					--table.insert(types, AstNode.new(AstNode.Kind)
+					-- TODO: Finish this
+				end
+			end
+		end
+	end
+
+	-- Function type-annotation parser
 end
 
 function Parser:parseTypeAnnotation()
