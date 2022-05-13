@@ -87,7 +87,7 @@ end
 	Parses the parser's options and insertes defaults for keys that were not
 	provided by the user.
 ]]
-function Parser.parseOptions(options)
+function Parser._parseOptions(options)
 	for option, default in pairs(Parser.DefaultOptions) do
 		options[option] = options[option] == nil and default or options[option]
 	end
@@ -524,7 +524,7 @@ function Parser:parseAssertionExpr()
 	return expr
 end
 
-function Parser:parseFunctionArgs()
+function Parser:parseFunctionArgs(selfParameter)
 	if self:_peek(Token.Kind.LeftBrace) then
 		return { self:parseTableConstructor() }
 	end
@@ -537,7 +537,11 @@ function Parser:parseFunctionArgs()
 	-- arguments, we can expect the user to provide normal function arguments
 	-- with parentheses.
 	self:_expect(Token.Kind.LeftParen)
+	
 	local args = {}
+	if selfParameter then
+		table.insert(args, selfParameter)
+	end
 
 	while not self:_accept(Token.Kind.RightParen) do
 		if #args then
@@ -566,8 +570,7 @@ function Parser:parsePrimaryExpr()
 		-- prefixexpr:name(functionargs)
 		elseif self:_accept(Token.Kind.Colon) then
 			local func = AstNode.new(AstNode.Kind.ColonIndex, expr, self:parseName())
-			-- TODO: Provide `self` flag to Parser::parseFunctionArgs?
-			expr = AstNode.new(AstNode.Kind.FunctionCall, func, self:parseFunctionArgs())
+			expr = AstNode.new(AstNode.Kind.FunctionCall, func, self:parseFunctionArgs(expr))
 
 		-- prefixexpr(functionargs) | prefixexpr{tableconstructor} | prefixexpr string
 		elseif
