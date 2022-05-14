@@ -5,12 +5,13 @@
 local Token = {}
 Token.__index = Token
 
-function Token.new(tokenKind, position, value)
+function Token.new(tokenKind, startPosition, endPosition, value)
 	local self = {}
 	setmetatable(self, Token)
 
+	self.startPosition = startPosition
+	self.endPosition = endPosition
 	self.kind = tokenKind
-	self.position = position
 	self.value = value
 
 	return self
