@@ -10,6 +10,7 @@ local Lexer = {}
 Lexer.__index = Lexer
 
 Lexer.Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+Lexer.BaseDigits = "0123456789ABCDEF"
 Lexer.Whitespace = " \t\n\r\f"
 Lexer.Digits = "0123456789"
 Lexer.EscapeSequences = {
@@ -147,6 +148,32 @@ function Lexer:_accept(toMatch)
 		self._position = self._position + #toMatch
 		return toMatch
 	end
+end
+
+function Lexer:readQuotedString()
+	local start = self._position
+	local quote = self:_accept("'") or self:_accept('"')
+	local content = {}
+
+	while not self:_accept(quote) do
+		local character = self:_advance()
+
+		if character == "\\" then
+			local escapeChar = self:_advance()
+			local escapeSequence = Lexer.EscapeSequences[escapeChar]
+			if not escapeSequence then
+				self:_error("%s is not a valid escape sequence", escapeChar)
+				break
+			end
+
+			character = escapeChar
+		end
+
+		table.insert(content, character)
+	end
+
+	content = table.concat(content)
+	return Token.new(Token.Kind.QuotedString, content, start, self._position)
 end
 
 --[[
