@@ -12,6 +12,18 @@ Lexer.__index = Lexer
 Lexer.Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 Lexer.Whitespace = " \t\n\r\f"
 Lexer.Digits = "0123456789"
+Lexer.EscapeSequences = {
+	["a"] = "\a",
+	["b"] = "\b",
+	["f"] = "\f",
+	["n"] = "\n",
+	["r"] = "\r",
+	["t"] = "\t",
+	["v"] = "\v",
+	["\\"] = "\\",
+	['"'] = '"',
+	["'"] = "'",
+}
 
 Lexer.Reserved = {
 	["and"] = Token.Kind.ReservedAnd,
@@ -172,7 +184,10 @@ function Lexer:read()
 		return self:readName()
 	end
 
-	if self:_match("'") or self:_match('"') or self:_match("[[") then
+	if self:_accept("[[") then
+		return self:readLongString()
+	end
+	if self:_match("'") or self:_match('"') then
 		return self:readQuotedString()
 	end
 end
