@@ -9,6 +9,10 @@ local Token = require(_VERSION == "Luau" and script.Parent.Token or "./Token.lua
 local Lexer = {}
 Lexer.__index = Lexer
 
+Lexer.Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+Lexer.Whitespace = " \t\n\r\f"
+Lexer.Digits = "0123456789"
+
 Lexer.Reserved = {
 	["and"] = Token.Kind.ReservedAnd,
 	["break"] = Token.Kind.ReservedBreak,
@@ -107,18 +111,70 @@ function Lexer.sortOperators(operatorTable)
 end
 
 --[[
-	Peeks at the next character without actually consuming it.
+	Returns the next n-characters (defaults to 1) from the string without
+	consuming them.
 ]]
-function Lexer:_peek(lookAhead)
-	local position = self._position + (lookAhead or 0)
-	return self._source:sub(position, position)
+function Lexer:_peek(count)
+	local endPosition = count + self._position
+	return self._source:sub(self._position, endPosition)
 end
 
 --[[
-	Consumes a character and returns what it was.
+	Matches a string to what is in the source at the position that we are at.
+	Returns `true` if the string was matched (does not consume anything).
 ]]
-function Lexer:_consume(count)
-	self._position = self._position + (count == nil and 1 or count)
+function Lexer:_match(toMatch)
+	return self:_peek(#toMatch) == toMatch
+end
+
+--[[
+	Accepts a string if valid, and returns `nil` otherwise.
+]]
+function Lexer:_accept(toMatch)
+	if self:_match(toMatch) then
+		self._position = self._position + #toMatch
+		return toMatch
+	end
+end
+
+--[[
+	Main lexical-analysis function that reads something from the source.
+]]
+function Lexer:read()
+	-- Reserved is just another word for keywords in Lua(u).
+	for _, reserved in ipairs(Lexer.Reserved) do
+		if self:_accept(reserved) then
+			return
+		end
+	end
+
+	-- Operators are split into groups based on their size.
+	for _, operatorGroup in ipairs(Lexer.Operators) do
+		for _, operator in ipairs(operatorGroup) do
+			if self:_accept(operator) then
+				return
+			end
+		end
+	end
+
+	if self:_accept("--") then
+		return self:readCommentBody()
+	end
+
+	local character = self:_peek()
+	if Lexer.Whitespace:find(character) then
+		return
+	end
+	if Lexer.Digits:find(character) then
+		return self:readNumber()
+	end
+	if Lexer.Alphabet:find(character) then
+		return self:readName()
+	end
+
+	if self:_match("'") or self:_match('"') or self:_match("[[") then
+		return self:readQuotedString()
+	end
 end
 
 Lexer.Operators = Lexer.sortOperators(Lexer.UnsortedOperators)
