@@ -197,6 +197,43 @@ function Lexer:readQuotedString()
 	return Token.new(Token.Kind.QuotedString, start, self._position, content)
 end
 
+function Lexer:readLongString(isComment, start)
+	start = start or self._position
+	self:_expect("[")
+
+	local startCount = 0
+	while self:_accept("=") do
+		startCount = startCount + 1
+	end
+
+	self:_expect("]")
+	local content = {}
+	local suffix = "]" .. ("="):rep(startCount) .. "]"
+
+	while not self:_accept(suffix) do
+		table.insert(content, self:_advance())
+	end
+
+	content = table.concat(content)
+	local tokenKind = isComment and Token.Kind.Comment or Token.Kind.LongString
+	return Token.new(tokenKind, start, self._position, content)
+end
+
+function Lexer:readComment()
+	local start = self._position
+	if self:_peek("[") then
+		return self:readLongString(true, start)
+	end
+
+	local content = {}
+	while not self:_accept("\n") do
+		table.insert(content, self:_advance())
+	end
+
+	content = table.concat(content)
+	return Token.new(Token.Kind.Comment, start, self._position, content)
+end
+
 function Lexer:readName()
 	local start = self._position
 	local content = {}
@@ -209,11 +246,26 @@ function Lexer:readName()
 	return Token.new(Token.Kind.Name, start, self._position, content)
 end
 
+function Lexer:readNumber()
+	-- TODO: Do this...
+end
+
 --[[
 	Main lexical-analysis function that reads something from the source.
 ]]
 function Lexer:read()
 	local start = self._position
+
+	if self:_accept("--") then
+		return self:readComment()
+	end
+
+	if self:_accept("[[") then
+		return self:readLongString()
+	end
+	if self:_match("'") or self:_match('"') then
+		return self:readQuotedString()
+	end
 
 	-- Reserved is just another word for keywords in Lua(u).
 	for reserved, tokenType in pairs(Lexer.Reserved) do
@@ -231,10 +283,6 @@ function Lexer:read()
 		end
 	end
 
-	if self:_accept("--") then
-		return self:readCommentBody()
-	end
-
 	local character = self:_peek()
 	if Lexer.Whitespace:find(character) then
 		return
@@ -244,13 +292,6 @@ function Lexer:read()
 	end
 	if Lexer.Alphabet:find(character) then
 		return self:readName()
-	end
-
-	if self:_accept("[[") then
-		return self:readLongString()
-	end
-	if self:_match("'") or self:_match('"') then
-		return self:readQuotedString()
 	end
 end
 
