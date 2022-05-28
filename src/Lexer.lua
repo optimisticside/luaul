@@ -72,8 +72,11 @@ Lexer.UnsortedOperators = {
 	["."] = Token.Kind.Dot,
 	[".."] = Token.Kind.Dot2,
 	["..."] = Token.Kind.Dot3,
+	
 	["::"] = Token.Kind.DoubleColon,
 	["->"] = Token.Kind.SkinnyArrow,
+	["|"] = Token.Kind.Pipe,
+	["&"] = Token.Kind.Ampersand,
 
 	["~="] = Token.Kind.NotEqual,
 	["="] = Token.Kind.Equal,
@@ -282,8 +285,11 @@ function Lexer:read()
 		end
 	end
 
-	-- Operators are split into groups based on their size.
-	for _, operatorGroup in ipairs(Lexer.Operators) do
+	-- Operators are split into groups based on their size, so we must
+	-- go in reverse.
+	for operatorLength = #Lexer.Operators, 1, -1 do
+		local operatorGroup = Lexer.Operators[operatorLength]
+
 		for operator, tokenType in pairs(operatorGroup) do
 			if self:_accept(operator) then
 				return Token.new(tokenType, start, self._position)

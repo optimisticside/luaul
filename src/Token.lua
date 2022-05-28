@@ -20,10 +20,12 @@ Token.Kind = enumerate("Token.Kind", {
 	"Caret", "SemiColon", "Colon", "Dot", "Dot2", "Dot3", "SkinnyArrow",
 	"NotEqual", "Equal", "LessThan", "LessEqual", "GreaterThan", "GreaterEqual",
 	"LeftParen", "RightParen", "LeftBracket", "RightBracket", "LeftBrace", "RightBrace",
-	"DoubleColon",
 
 	-- Delimiters
 	"Comma", "SemiColon",
+
+	-- Type-related operators
+	"DoubleColon", "Pipe", "Ampersand",
 
 	-- Compound operators
 	"PlusEqual", "MinusEqual", "StarEqual", "SlashEqual",

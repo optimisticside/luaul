@@ -592,13 +592,15 @@ function Parser:parseTypeAnnotation()
 		if self:_accept(Token.Kind.Pipe) then
 			table.insert(parts, self:parseSimpleTypeAnnotation())
 			isUnion = true
-		elseif self:_accept(Token.Kind.And) then
+
+		elseif self:_accept(Token.Kind.Ampersand) then
 			table.insert(parts, self:parseSimpleTypeAnnotation())
 			isIntersection = true
 
 		elseif self:_accept(Token.Kind.QuestionMark) then
 			table.insert(parts, AstNode.Kind.Nil)
 			isUnion = true
+
 		else
 			break
 		end
