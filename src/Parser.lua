@@ -27,7 +27,7 @@ Parser.CompountOpers = {
 Parser.UnaryOpers = {
 	[Token.Kind.Hashtag] = AstNode.Kind.Len,
 	[Token.Kind.ReservedNot] = AstNode.Kind.Not,
-	[Token.Kind.Minus] = AstNode.Kind.Minus
+	[Token.Kind.Minus] = AstNode.Kind.Minus,
 }
 
 Parser.BinaryOpers = {
@@ -102,9 +102,7 @@ end
 	it.
 ]]
 function Parser.isLastStat(stat)
-	return stat.kind == AstNode.Kind.Break
-		or stat.Kind == AstNode.Kind.Continue
-		or stat.kind == AstNode.Kind.Return
+	return stat.kind == AstNode.Kind.Break or stat.Kind == AstNode.Kind.Continue or stat.kind == AstNode.Kind.Return
 end
 
 --[[
@@ -174,11 +172,7 @@ function Parser:_expect(tokenKind, context)
 				Token.kindString(token.kind)
 			)
 		else
-			self:_error(
-				"Expected %s, got %s",
-				Token.kindString(tokenKind),
-				Token.kindString(token.kind)
-			)
+			self:_error("Expected %s, got %s", Token.kindString(tokenKind), Token.kindString(token.kind))
 		end
 	end
 
@@ -294,17 +288,34 @@ end
 
 -- Generic operator usage.
 Parser.parsePow = Parser.useGeneric(Parser.genericBinary, Parser.parseAssertionExpr, Token.Kind.Caret)
-Parser.parseUnary = Parser.useGeneric(Parser.genericPrefix, Parser.genericBinary,
-	Token.Kind.Minus, Token.Kind.ReservedNot)
+Parser.parseUnary = Parser.useGeneric(
+	Parser.genericPrefix,
+	Parser.genericBinary,
+	Token.Kind.Minus,
+	Token.Kind.ReservedNot
+)
 
 Parser.parseFactor = Parser.useGeneric(Parser.genericBinary, Parser.parseUnary, Token.Kind.Modulo)
-Parser.parseMulExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseMulExpr,
-	Token.Kind.Star, Token.Kind.Slash, Token.Kind.Modulo)
+Parser.parseMulExpr = Parser.useGeneric(
+	Parser.genericBinary,
+	Parser.parseMulExpr,
+	Token.Kind.Star,
+	Token.Kind.Slash,
+	Token.Kind.Modulo
+)
 
 Parser.parseSumExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseMulExpr, Token.Kind.Plus, Token.Kind.Minus)
 Parser.parseConcatExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseSumExpr, Token.Kind.Dot2)
-Parser.parseCompareExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseConcatExpr, Token.Kind.LessThan,
-	Token.Kind.LessEqual, Token.Kind.GreaterThan, Token.Kind.GreaterEqual, Token.Kind.Equal, Token.Kind.NotEqual)
+Parser.parseCompareExpr = Parser.useGeneric(
+	Parser.genericBinary,
+	Parser.parseConcatExpr,
+	Token.Kind.LessThan,
+	Token.Kind.LessEqual,
+	Token.Kind.GreaterThan,
+	Token.Kind.GreaterEqual,
+	Token.Kind.Equal,
+	Token.Kind.NotEqual
+)
 
 Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompareExpr, Token.Kind.And)
 Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr, Token.Kind.Or)
@@ -340,7 +351,6 @@ function Parser:parseTableConstructor()
 			self:_expect(Token.Kind.Equal)
 			local value = self:parseExpr()
 			table.insert(fields, { key, value })
-
 		elseif self:_peek(Token.Kind.Name) then
 			-- If we see a name, it could either be the key of a value
 			-- in the table, or just be a variable.
@@ -450,7 +460,6 @@ function Parser:parseSimpleTypeAnnotation()
 		if self:_accept(Token.Kind.Dot) then
 			prefix = name
 			name = self:parseName()
-
 		elseif name.value == "typeof" then
 			self:_expect(Token.Kind.LeftParen)
 			local expr = self:parseExpr()
@@ -533,7 +542,6 @@ function Parser:parseTypeAnnotation()
 		if self:_accept(Token.Kind.Pipe) then
 			table.insert(parts, self:parseSimpleTypeAnnotation())
 			isUnion = true
-
 		elseif self:_accept(Token.Kind.And) then
 			table.insert(parts, self:parseSimpleTypeAnnotation())
 			isIntersection = true
@@ -541,7 +549,6 @@ function Parser:parseTypeAnnotation()
 		-- luacheck: ignore
 		elseif self:_accept(Token.Kind.QuestionMark) then
 			-- TODO: Add support for this.
-
 		else
 			break
 		end
@@ -577,7 +584,7 @@ function Parser:parseFunctionArgs(selfParameter)
 	-- arguments, we can expect the user to provide normal function arguments
 	-- with parentheses.
 	self:_expect(Token.Kind.LeftParen)
-	
+
 	local args = {}
 	if selfParameter then
 		table.insert(args, selfParameter)
@@ -619,7 +626,6 @@ function Parser:parsePrimaryExpr()
 			or self:_peek(Token.Kind.String)
 		then
 			expr = AstNode.new(AstNode.Kind.FunctionCall, expr, self:parseFunctionArgs())
-
 		else
 			break
 		end
@@ -684,7 +690,7 @@ function Parser:parseStat()
 		self:_expect(Token.Kind.ReservedThen)
 
 		local thenBlock = self:parseBlock()
-		local blocks = { { ifCondition, thenBlock }  }
+		local blocks = { { ifCondition, thenBlock } }
 
 		while self:_accept(Token.Kind.ReservedElseIf) do
 			local elseIfCondition = self:parseExpr()
@@ -771,7 +777,7 @@ function Parser:parseStat()
 			self:_expect(Token.Kind.ReservedEnd)
 			return AstNode.new(AstNode.Kind.LocalFunction, name, body)
 
-		-- Local variable defenitions.
+			-- Local variable defenitions.
 		else
 			local bindings = self:parseBindingList()
 			self:_expect(Token.Kind.Equal)
@@ -811,12 +817,7 @@ function Parser:parseStat()
 			-- I did not know that `type` was actually an operator until now.
 			if expr.value == "type" then
 				return self:parseTypeAlias(expr, false)
-
-			elseif
-				expr.value == "export"
-				and self._token.kind == Token.Kind.Iden
-				and self._token.value == "type"
-			then
+			elseif expr.value == "export" and self._token.kind == Token.Kind.Iden and self._token.value == "type" then
 				return self:parseTypeAlias(expr, true)
 			end
 		end

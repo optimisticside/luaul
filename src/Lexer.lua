@@ -73,7 +73,7 @@ Lexer.UnsortedOperators = {
 	["<"] = Token.Kind.LessThan,
 	["<="] = Token.Kind.LessEqual,
 	[">"] = Token.Kind.GreaterThan,
-	[">="] =Token.Kind.GreaterEqual,
+	[">="] = Token.Kind.GreaterEqual,
 
 	["("] = Token.Kind.LeftParen,
 	[")"] = Token.Kind.RightBracket,
