@@ -331,6 +331,8 @@ Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompar
 Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr, Token.Kind.ReservedOr)
 Parser.parseExpr = Parser.parseOrExpr
 
+-- Note that the `if` that starts the if-else expression must be consumed
+-- prior to calling ths function.
 function Parser:parseIfElseExpr()
 	local condition = self:parseExpr()
 	self:_expect(Token.Kind.ReservedThen)
@@ -397,7 +399,7 @@ function Parser:parseSimpleExpr()
 	end
 
 	-- If-else expression parser.
-	if self:_peek(Token.Kind.ReservedIf) then
+	if self:_accept(Token.Kind.ReservedIf) then
 		return self:parseIfElseExpr()
 	end
 
