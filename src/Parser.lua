@@ -616,7 +616,7 @@ function Parser:parsePrimaryExpr()
 
 		-- prefixexpr:name(functionargs)
 		elseif self:_accept(Token.Kind.Colon) then
-			local func = AstNode.new(AstNode.Kind.ColonIndex, expr, self:parseName())
+			local func = AstNode.new(AstNode.Kind.SelfIndexName, expr, self:parseName())
 			expr = AstNode.new(AstNode.Kind.FunctionCall, func, self:parseFunctionArgs(expr))
 
 		-- prefixexpr(functionargs) | prefixexpr{tableconstructor} | prefixexpr string
