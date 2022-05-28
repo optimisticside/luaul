@@ -21,13 +21,13 @@ Parser.CompountOpers = {
 	[Token.Kind.PlusEqual] = AstNode.Kind.Add,
 	[Token.Kind.MinusEqual] = AstNode.Kind.Sub,
 	[Token.Kind.StarEqual] = AstNode.Kind.Mul,
-	[Token.Kind.PlashEqual] = AstNode.Kind.Div,
+	[Token.Kind.SlashEqual] = AstNode.Kind.Div,
 }
 
 Parser.UnaryOpers = {
 	[Token.Kind.Hashtag] = AstNode.Kind.Len,
 	[Token.Kind.ReservedNot] = AstNode.Kind.Not,
-	[Token.Kind.Minus] = AstNode.Kind.Minus,
+	[Token.Kind.Minus] = AstNode.Kind.Neg,
 }
 
 Parser.BinaryOpers = {
@@ -35,7 +35,7 @@ Parser.BinaryOpers = {
 	[Token.Kind.Minus] = AstNode.Kind.Sub,
 	[Token.Kind.Star] = AstNode.Kind.Mul,
 	[Token.Kind.Slash] = AstNode.Kind.Div,
-	[Token.Kind.Percent] = AstNode.Kind.Mod,
+	[Token.Kind.Modulo] = AstNode.Kind.Mod,
 	[Token.Kind.Caret] = AstNode.Kind.Pow,
 	[Token.Kind.Dot2] = AstNode.Kind.Concat,
 	[Token.Kind.NotEqual] = AstNode.Kind.CompareNe,

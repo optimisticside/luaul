@@ -26,7 +26,7 @@ Lexer.EscapeSequences = {
 	["'"] = "'",
 }
 
-Lexer.NameChars = Lexer.Alphabet .. Lexer.Digits .. "-"
+Lexer.NameChars = Lexer.Alphabet .. Lexer.Digits .. "_"
 Lexer.Reserved = {
 	["and"] = Token.Kind.ReservedAnd,
 	["break"] = Token.Kind.ReservedBreak,
@@ -59,6 +59,11 @@ Lexer.UnsortedOperators = {
 	["%"] = Token.Kind.Modulo,
 	["#"] = Token.Kind.Hashtag,
 	["?"] = Token.Kind.QuestionMark,
+
+	["+="] = Token.Kind.PlusEqual,
+	["-="] = Token.Kind.MinusEqual,
+	["*="] = Token.Kind.StarEqual,
+	["/="] = Token.Kind.SlashEqual,
 
 	["^"] = Token.Kind.Caret,
 	[";"] = Token.Kind.SemiColon,
@@ -140,6 +145,7 @@ end
 	consuming them.
 ]]
 function Lexer:_peek(count)
+	count = count == nil and 0 or count
 	local endPosition = count + self._position
 	return self._source:sub(self._position, endPosition)
 end
@@ -149,14 +155,15 @@ end
 	Returns `true` if the string was matched (does not consume anything).
 ]]
 function Lexer:_match(toMatch)
-	return self:_peek(#toMatch) == toMatch
+	print(self:_peek(#toMatch - 1), toMatch)
+	return self:_peek(#toMatch - 1) == toMatch
 end
 
 --[[
 	Returns the currnet character and advances to the next one.
 ]]
 function Lexer:_advance()
-	local character = self._peek()
+	local character = self:_peek()
 	self._position = self._position + 1
 	return character
 end
@@ -238,8 +245,8 @@ function Lexer:readName()
 	local start = self._position
 	local content = {}
 
-	while Lexer.NameChars:find(self._peek()) do
-		table.insert(content, self._advance())
+	while Lexer.NameChars:find(self:_peek()) do
+		table.insert(content, self:_advance())
 	end
 
 	content = table.concat(content)
@@ -293,6 +300,23 @@ function Lexer:read()
 	if Lexer.Alphabet:find(character) then
 		return self:readName()
 	end
+end
+
+--[[
+	Scans all the tokens in the provided source.
+]]
+function Lexer:scan()
+	while self._position < #self._source do
+		local token = self:read()
+
+		if token then
+			table.insert(self._tokens, token)
+		else
+			break
+		end
+	end
+
+	return self._tokens
 end
 
 Lexer.Operators = Lexer.sortOperators(Lexer.UnsortedOperators)

@@ -9,14 +9,17 @@ local enumerate = require(_VERSION == "Luau" and script.Parent.enumerate or "./e
 local AstNode = {}
 AstNode.__index = AstNode
 
-AstNode.Kind = enumerate({
+AstNode.Kind = enumerate("AstNode.Kind", {
 	-- Simple types
 	"True", "False", "Nil", "Dot3",
 
-	-- Operators
-	"Add", "Sub", "Mul", "Div", "Pow", "Concat",
+	-- Unary operators
+	"Len", "Neg", "Not",
+
+	-- Binary Operators
+	"Add", "Sub", "Mul", "Div", "Pow", "Concat", "Mod",
 	"CompareNe", "CompareEq", "CompareLt", "CompareLe", "CompareGt", "CompareGe",
-	"And", "Or", "Not",
+	"And", "Or",
 
 	-- Control-related operators
 	"Continue", "Break", "Return",
@@ -33,7 +36,7 @@ AstNode.Kind = enumerate({
 	-- Type-related things
 	"TypeUnion", "TypeIntersection", "TypeAssertion", "TypeReference", "TypeTypeOf", "TypeFunction",
 	"TypeTableIndexer", "TypeTableProp", "TypeTable",
-	"SingletonBool", "SingletonString", "Singleton",
+	"SingletonBool", "SingletonString",
 })
 
 function AstNode.fromArray(nodeKind, children)
