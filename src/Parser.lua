@@ -77,7 +77,9 @@ end
 	parse the provided operators, and call the provided subparser to get the
 	operands.
 ]]
-function Parser.useGeneric(generic, subParser, operators)
+function Parser.useGeneric(generic, subParser, ...)
+	local operators = table.pack(...)
+
 	return function(self)
 		return generic(self, operators, subParser)
 	end
@@ -362,6 +364,13 @@ function Parser:parseSimpleExpr()
 	if self:_peek(Token.Kind.LeftBrace) then
 		return self:parseTableConstructor()
 	end
+
+	-- If-else expression parser.
+	if self:_peek(Token.Kind.ReservedIf) then
+		return self:parseIfElseExpr()
+	end
+
+	return self:parsePrimaryExpr()
 end
 
 function Parser:parsePrefixExpr()
@@ -371,7 +380,7 @@ function Parser:parsePrefixExpr()
 		return expr
 	end
 
-	-- TODO: Parse name expression.
+	return self:parseName()
 end
 
 function Parser:parseBinding()
@@ -391,6 +400,10 @@ end
 
 function Parser:parseBindingList()
 	return self:_parseList(Parser.parseBinding, Token.Kind.Comma)
+end
+
+function Parser:parseTypeList()
+	return self:_parseList(Parser.parseTypeAnnotation, Token.Kind.Comma)
 end
 
 -- luacheck: ignore
@@ -446,8 +459,7 @@ function Parser:parseSimpleTypeAnnotation()
 			parameters = self:parseTypeParams()
 		end
 
-		return AstNode.new(AstNode.Kind.TypeReference,
-			prefix, name, hasParameters, parameters)
+		return AstNode.new(AstNode.Kind.TypeReference, prefix, name, hasParameters, parameters)
 	end
 
 	-- Table type-annotation parser
@@ -456,21 +468,53 @@ function Parser:parseSimpleTypeAnnotation()
 
 		while not self:_accept(Token.Kind.RightBrace) do
 			-- [string]: type
-			if self:_accept(Token.Kind.LeftBrace) then
-				local quotedString = self:_accept(Token.Kind.QuotedString)
-				if quotedString then
-					self:_expect(Token.Kind.RightBracket)
-					self:_expect(Token.Kind.Colon)
+			if self:_accept(Token.Kind.LeftBracket) then
+				local indexType = self:parseTypeAnnotation()
 
-					local valueType = self:parseTypeAnnotation()
-					--table.insert(types, AstNode.new(AstNode.Kind)
-					-- TODO: Finish this
-				end
+				self:_expect(Token.Kind.RightBracket)
+				self:_expect(Token.Kind.Colon)
+
+				local valueType = self:parseTypeAnnotation()
+				table.insert(types, AstNode.new(AstNode.Kind.TypeTableIndexer, indexType, valueType))
+
+			-- name: type
+			elseif self:_peek(Token.Kind.Name) then
+				local name = self:parseName()
+				table.insert(types, AstNode.new(AstNode.Kind.TypeTableProp, name, self:parseTypeAnnotation()))
+			end
+
+			-- TODO: Does this mean that if we do not get a comma or
+			-- semi-colon, we enter an infinite loop?
+			if self:_accept(Token.Kind.Comma) or self:_accept(Token.Kind.SemiColon) then
+				self:_advance()
 			end
 		end
+
+		return AstNode.fromArray(AstNode.Kind.TypeTable, types)
 	end
 
 	-- Function type-annotation parser
+	if self:_peek(Token.Kind.LessThan) or self:_peek(Token.Kind.LeftParen) then
+		local generics = self:parseGenericTypeList()
+		self:_expect(Token.Kind.LeftParen)
+
+		local params = nil
+		if self:_peek(Token.Kind.RightParen) then
+			params = self:parseTypeList()
+		end
+
+		self:_expect(Token.Kind.RightParen)
+		self:_expect(Token.Kind.SkinnyArrow)
+
+		-- Return types can also be type lists wrapped in parentheses.
+		if self:_accept(Token.Kind.LeftParen) then
+			local returnType = self:parseTypeList()
+			self:_expect(Token.Kind.RightParen)
+			return AstNode.new(AstNode.Kind.TypeFunction, generics, params, returnType)
+		end
+
+		return AstNode.new(AstNode.Kind.TypeFunction, generics, params, self:parseTypeAnnotation())
+	end
 end
 
 function Parser:parseTypeAnnotation()
