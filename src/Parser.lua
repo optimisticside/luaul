@@ -764,6 +764,8 @@ function Parser:parseStat()
 		return self:parseCompoundAssignment()
 	end
 
+	-- Things like `type`, `export`, and `continue` are context -dependent
+	-- keywords so we handle them as if they were identifiers.
 	if expr.kind == AstNode.Kind.Iden then
 		if self._options.allowTypeAnnotations then
 			-- I did not know that `type` was actually an operator until now.
@@ -779,8 +781,6 @@ function Parser:parseStat()
 			end
 		end
 
-		-- I took a look at Luau's parser in C++ and apparently it does this
-		-- instead of making the lexer detect it as a continue keyword.
 		if self._options.supportContinueStatement and expr.value == "continue" then
 			return AstNode.new(AstNode.Kind.Continue)
 		end
