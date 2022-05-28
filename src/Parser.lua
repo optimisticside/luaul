@@ -283,8 +283,10 @@ end
 
 function Parser:parseAssertionExpr()
 	local expr = self:parseSimpleExpr()
+
 	if self._options.allowTypeAnnotations and self:_accept(Token.Kind.DoubleColon) then
-		return AstNode.new(AstNode.Kind.TypeAssertionExpr, expr, self:parseTypeAnnotation())
+		local annotation = self:parseTypeAnnotation()
+		expr = AstNode.new(AstNode.Kind.TypeAssertion, expr, annotation)
 	end
 
 	return expr
@@ -560,17 +562,6 @@ function Parser:parseTypeAnnotation()
 	-- If we didn't have an intersection or a union, then we can assume we
 	-- only had 1 element in the array.
 	return parts[1]
-end
-
-function Parser:parseAssertionExpr()
-	local expr = self:parseSimpleExpr()
-
-	if self._options.allowTypeAnnotations and self:_accept(Token.Kind.DoubleColon) then
-		local annotation = self:parseTypeAnnotation()
-		expr = AstNode.new(AstNode.Kind.TypeAssertion, expr, annotation)
-	end
-
-	return expr
 end
 
 function Parser:parseFunctionArgs(selfParameter)
