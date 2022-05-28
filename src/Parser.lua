@@ -170,21 +170,22 @@ end
 	then it will throw a parse-error.
 ]]
 function Parser:_expect(tokenKind, context)
-	local token = self:_accept(tokenKind)
+	local token = self._token
 
 	if not token or token.kind ~= tokenKind then
 		if context then
 			self:_error(
 				"Expected %s when parsing %s, got %s",
-				Token.kindString(tokenKind),
+				tostring(tokenKind),
 				context,
-				Token.kindString(token.kind)
+				tostring(token.kind)
 			)
 		else
-			self:_error("Expected %s, got %s", Token.kindString(tokenKind), Token.kindString(token.kind))
+			self:_error("Expected %s, got %s", tostring(tokenKind), tostring(token.kind))
 		end
 	end
 
+	self:_advance()
 	return token
 end
 
@@ -438,7 +439,7 @@ end
 
 -- luacheck: ignore
 function Parser:parseName(context)
-	-- TODO: Do this...
+	return self:_expect(Token.Kind.Name)
 end
 
 function Parser:parseSimpleTypeAnnotation()
@@ -581,6 +582,7 @@ function Parser:parseTypeAnnotation()
 end
 
 function Parser:parseFunctionArgs(selfParameter)
+	-- TODO: these first two cases do not take `selfParameter` into account.
 	if self:_peek(Token.Kind.LeftBrace) then
 		return { self:parseTableConstructor() }
 	end

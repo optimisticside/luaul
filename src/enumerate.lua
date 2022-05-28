@@ -25,7 +25,7 @@ local function enumerate(enumName, enumItems)
 		local metaTable = getmetatable(item)
 
 		function metaTable.__tostring()
-			return ("%s:%s"):format(enumName, name)
+			return ("%s.%s"):format(enumName, name)
 		end
 
 		items[name] = item
