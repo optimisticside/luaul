@@ -546,9 +546,9 @@ function Parser:parseTypeAnnotation()
 			table.insert(parts, self:parseSimpleTypeAnnotation())
 			isIntersection = true
 
-		-- luacheck: ignore
 		elseif self:_accept(Token.Kind.QuestionMark) then
-			-- TODO: Add support for this.
+			table.insert(parts, AstNode.Kind.Nil)
+			isUnion = true
 		else
 			break
 		end
