@@ -212,7 +212,7 @@ function Parser:genericBinary(tokens, subParser)
 			break
 		end
 
-		local right = subParser()
+		local right = subParser(self)
 		local nodeKind = Parser.BinaryOpers[token]
 		left = AstNode.new(nodeKind, left, right)
 	end
