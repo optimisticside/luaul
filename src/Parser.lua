@@ -814,8 +814,10 @@ function Parser:parseStat()
 		return self:parseCompoundAssignment()
 	end
 
-	-- Things like `type`, `export`, and `continue` are context -dependent
+	-- Things like `type`, `export`, and `continue` are context-dependent
 	-- keywords so we handle them as if they were identifiers.
+	-- TODO: Take another look at this code. Identifiers should be same thing
+	-- as names.
 	if expr.kind == AstNode.Kind.Iden then
 		if self._options.allowTypeAnnotations then
 			-- I did not know that `type` was actually an operator until now.
