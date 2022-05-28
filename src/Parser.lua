@@ -435,8 +435,7 @@ function Parser:parseSimpleTypeAnnotation()
 		local name = self:parseName()
 		local prefix
 
-		-- After looking at Luau's parser, I noticed that it only supports
-		-- one type-field indexing, not multiple.
+		-- Luau only supports one type-field indexing, not multiple.
 		if self:_accept(Token.Kind.Dot) then
 			prefix = name
 			name = self:parseName()
@@ -464,10 +463,11 @@ function Parser:parseSimpleTypeAnnotation()
 
 	-- Table type-annotation parser
 	if self:_accept(Token.Kind.LeftBrace) then
+		local canContinue = false
 		local types = {}
 
-		while not self:_accept(Token.Kind.RightBrace) do
-			-- [string]: type
+		while canContinue and not self:_accept(Token.Kind.RightBrace) do
+			-- [type]: type
 			if self:_accept(Token.Kind.LeftBracket) then
 				local indexType = self:parseTypeAnnotation()
 
@@ -483,11 +483,7 @@ function Parser:parseSimpleTypeAnnotation()
 				table.insert(types, AstNode.new(AstNode.Kind.TypeTableProp, name, self:parseTypeAnnotation()))
 			end
 
-			-- TODO: Does this mean that if we do not get a comma or
-			-- semi-colon, we enter an infinite loop?
-			if self:_accept(Token.Kind.Comma) or self:_accept(Token.Kind.SemiColon) then
-				self:_advance()
-			end
+			canContinue = self:_accept(Token.Kind.Comma) or self:_accept(Token.Kind.SemiColon)
 		end
 
 		return AstNode.fromArray(AstNode.Kind.TypeTable, types)
