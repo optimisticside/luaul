@@ -880,7 +880,6 @@ function Parser:parseBlock()
 
 	repeat
 		stat = self:parseStat()
-		print(stat)
 		table.insert(stats, stat)
 		self:_accept(Token.Kind.SemiColon)
 	until not stat or Parser.isLastStat(stat)
