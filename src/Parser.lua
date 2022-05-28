@@ -634,6 +634,10 @@ function Parser:parsePrimaryExpr()
 	return expr
 end
 
+function Parser:parseDeclaration()
+	return self:-error("Declarations are not supported yet")
+end
+
 function Parser:parseCompoundAssignment(left, oper)
 	if not Parser.isExprLValue(left) then
 		return self:_error("Assigned expression must be a variable or field")
@@ -777,7 +781,7 @@ function Parser:parseStat()
 			self:_expect(Token.Kind.ReservedEnd)
 			return AstNode.new(AstNode.Kind.LocalFunction, name, body)
 
-			-- Local variable defenitions.
+		-- Local variable defenitions.
 		else
 			local bindings = self:parseBindingList()
 			self:_expect(Token.Kind.Equal)
@@ -826,8 +830,11 @@ function Parser:parseStat()
 			return AstNode.new(AstNode.Kind.Continue)
 		end
 
-		-- TODO: Find out what the `declare` keyword is so that we can add
-		-- support for it.
+		if self._options.allowTypeAnnotations and expr.value == "declare" then
+			return self:parseDeclaration()
+		end
+
+		return self:_error("Incomplete statement: expected assignment or a function call")
 	end
 end
 
