@@ -155,7 +155,6 @@ end
 	Returns `true` if the string was matched (does not consume anything).
 ]]
 function Lexer:_match(toMatch)
-	print(self:_peek(#toMatch - 1), toMatch)
 	return self:_peek(#toMatch - 1) == toMatch
 end
 
@@ -228,7 +227,7 @@ end
 
 function Lexer:readComment()
 	local start = self._position
-	if self:_peek("[") then
+	if self:_match("[") then
 		return self:readLongString(true, start)
 	end
 
@@ -245,7 +244,7 @@ function Lexer:readName()
 	local start = self._position
 	local content = {}
 
-	while Lexer.NameChars:find(self:_peek()) do
+	while Lexer.NameChars:find(self:_peek(), 1, true) do
 		table.insert(content, self:_advance())
 	end
 
@@ -267,7 +266,7 @@ function Lexer:read()
 		return self:readComment()
 	end
 
-	if self:_accept("[[") then
+	if self:_match("[[") or self:_match("[=") then
 		return self:readLongString()
 	end
 	if self:_match("'") or self:_match('"') then
@@ -291,13 +290,14 @@ function Lexer:read()
 	end
 
 	local character = self:_peek()
-	if Lexer.Whitespace:find(character) then
-		return
+	if Lexer.Whitespace:find(character, 1, true) then
+		self:_advance()
+		return true
 	end
-	if Lexer.Digits:find(character) then
+	if Lexer.Digits:find(character, 1, true) then
 		return self:readNumber()
 	end
-	if Lexer.Alphabet:find(character) then
+	if Lexer.Alphabet:find(character, 1, true) then
 		return self:readName()
 	end
 end
@@ -309,10 +309,12 @@ function Lexer:scan()
 	while self._position < #self._source do
 		local token = self:read()
 
-		if token then
-			table.insert(self._tokens, token)
-		else
+		if not token then
 			break
+		end
+
+		if Token.is(token) then
+			table.insert(self._tokens, token)
 		end
 	end
 

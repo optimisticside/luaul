@@ -58,10 +58,17 @@ function Parser.new(tokens, options, advancer)
 	local self = {}
 	setmetatable(self, Parser)
 
+	local index = 1
+	self._advancer = advancer or function()
+		index = index + 1
+		if index < #self._tokens then
+			return self._tokens[index]
+		end
+	end
+
 	self._tokens = tokens
-	self._options = Parser._parseOptions(options)
-	self._advancer = advancer or next
-	self._token = self._advancer(tokens, nil)
+	self._options = Parser._parseOptions(options or {})
+	self._token = self._advancer()
 
 	return self
 end
@@ -93,6 +100,8 @@ function Parser._parseOptions(options)
 	for option, default in pairs(Parser.DefaultOptions) do
 		options[option] = options[option] == nil and default or options[option]
 	end
+
+	return options
 end
 
 --[[
@@ -132,7 +141,7 @@ end
 	Advances to the next token.
 ]]
 function Parser:_advance()
-	self._token = self._advancer(self._tokens, self._token)
+	self._token = self._advancer()
 end
 
 --[[
@@ -290,7 +299,7 @@ end
 Parser.parsePow = Parser.useGeneric(Parser.genericBinary, Parser.parseAssertionExpr, Token.Kind.Caret)
 Parser.parseUnary = Parser.useGeneric(
 	Parser.genericPrefix,
-	Parser.genericBinary,
+	Parser.genericPow,
 	Token.Kind.Minus,
 	Token.Kind.ReservedNot
 )
@@ -298,7 +307,7 @@ Parser.parseUnary = Parser.useGeneric(
 Parser.parseFactor = Parser.useGeneric(Parser.genericBinary, Parser.parseUnary, Token.Kind.Modulo)
 Parser.parseMulExpr = Parser.useGeneric(
 	Parser.genericBinary,
-	Parser.parseMulExpr,
+	Parser.parseFactor,
 	Token.Kind.Star,
 	Token.Kind.Slash,
 	Token.Kind.Modulo
@@ -317,8 +326,8 @@ Parser.parseCompareExpr = Parser.useGeneric(
 	Token.Kind.NotEqual
 )
 
-Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompareExpr, Token.Kind.And)
-Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr, Token.Kind.Or)
+Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompareExpr, Token.Kind.ReservedAnd)
+Parser.parseOrExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseAndExpr, Token.Kind.ReservedOr)
 Parser.parseExpr = Parser.parseOrExpr
 
 function Parser:parseIfElseExpr()
@@ -796,7 +805,7 @@ function Parser:parseStat()
 		return AstNode.new(AstNode.Kind.Return, exprList)
 	end
 
-	if self:_accept(Token.Kind.Break) then
+	if self:_accept(Token.Kind.ReservedBreak) then
 		return AstNode.new(AstNode.Kind.Break)
 	end
 
