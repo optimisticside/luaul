@@ -635,7 +635,7 @@ function Parser:parsePrimaryExpr()
 end
 
 function Parser:parseDeclaration()
-	return self:-error("Declarations are not supported yet")
+	return self:_error("Declarations are not supported yet")
 end
 
 function Parser:parseCompoundAssignment(left, oper)
