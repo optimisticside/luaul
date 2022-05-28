@@ -245,7 +245,7 @@ function Parser:genericPrefix(tokens, subParser)
 			end
 		end
 
-		if token then
+		if not token then
 			break
 		end
 
