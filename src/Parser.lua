@@ -200,7 +200,7 @@ end
 function Parser:genericBinary(tokens, subParser)
 	local left = subParser()
 
-	if self:_reachedEnd() then
+	if not self._token then
 		return left
 	end
 
@@ -390,7 +390,7 @@ function Parser:parseExprList()
 end
 
 function Parser:parseBindingList()
-	return self:_parseList(Parser.parserBinding, Token.Kind.Comma)
+	return self:_parseList(Parser.parseBinding, Token.Kind.Comma)
 end
 
 -- luacheck: ignore
