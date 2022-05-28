@@ -644,7 +644,7 @@ function Parser:parseCompoundAssignment(left, oper)
 	end
 
 	local value = self:parseExpr()
-	return AstNode.new(AstNode.Node.CompoundAssign, left, oper, value)
+	return AstNode.new(AstNode.Kind.CompoundAssign, left, oper, value)
 end
 
 function Parser:parseAssignment(left)
