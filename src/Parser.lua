@@ -439,6 +439,10 @@ function Parser:parseTypeList()
 	return self:_parseList(Parser.parseTypeAnnotation, Token.Kind.Comma)
 end
 
+function Parser:parseTypeParams()
+	-- TODO: Implement this.
+end
+
 -- luacheck: ignore
 function Parser:parseName(context)
 	return self:_expect(Token.Kind.Name)
@@ -493,7 +497,7 @@ function Parser:parseSimpleTypeAnnotation()
 
 		-- We should rename these tokens to be something like:
 		-- Token.Kind.AngleBracketLeft or something, to avoid confusion.
-		if self:_expect(Token.Kind.LessThan) then
+		if self:_peek(Token.Kind.LessThan) then
 			hasParameters = true
 			parameters = self:parseTypeParams()
 		end
