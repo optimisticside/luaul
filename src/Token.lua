@@ -26,7 +26,7 @@ Token.Kind = enumerate("Token.Kind", {
 	"PlusEqual", "MinusEqual", "StarEqual", "SlashEqual",
 
 	-- Other things
-	"QuotedString", "LongString", "Comment", "Name",
+	"QuotedString", "LongString", "Comment", "Name", "EndOfFile",
 })
 
 function Token.new(tokenKind, startPosition, endPosition, value)

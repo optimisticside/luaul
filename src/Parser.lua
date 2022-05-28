@@ -873,7 +873,7 @@ function Parser:parseBlock()
 		stat = self:parseStat()
 		table.insert(stats, stat)
 		self:_accept(Token.Kind.SemiColon)
-	until not Parser.isLastStat(stat)
+	until not Parser.isLastStat(stat) or not stat
 
 	return AstNode.fromArray(AstNode.Kind.Block, stats)
 end

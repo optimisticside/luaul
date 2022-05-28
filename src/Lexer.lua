@@ -318,6 +318,9 @@ function Lexer:scan()
 		end
 	end
 
+	-- Having an `EndOfFile` token helps the parser throw errors better, for
+	-- when it expects something but get an EOF token instead.
+	table.insert(self._tokens, Token.new(Token.Kind.EndOfFile))
 	return self._tokens
 end
 
