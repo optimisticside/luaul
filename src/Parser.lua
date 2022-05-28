@@ -299,7 +299,7 @@ end
 Parser.parsePow = Parser.useGeneric(Parser.genericBinary, Parser.parseAssertionExpr, Token.Kind.Caret)
 Parser.parseUnary = Parser.useGeneric(
 	Parser.genericPrefix,
-	Parser.genericPow,
+	Parser.parsePow,
 	Token.Kind.Minus,
 	Token.Kind.ReservedNot
 )
@@ -456,7 +456,7 @@ function Parser:parseSimpleTypeAnnotation()
 		return AstNode.new(AstNode.Kind.SingletonBool, AstNode.Kind.False)
 	end
 
-	local stringType = self:_accept(Token.Kind.String)
+	local stringType = self:_accept(Token.Kind.QuotedString) or self:_accept(Token.Kind.LongString)
 	if stringType then
 		return AstNode.new(AstNode.Kind.SingletonString, stringType)
 	end
@@ -585,8 +585,8 @@ function Parser:parseFunctionArgs(selfParameter)
 		return { self:parseTableConstructor() }
 	end
 
-	if self:_peek(Token.Kind.String) then
-		return { self:_accept(Token.Kind.String) }
+	if self:_peek(Token.Kind.QuotedString) then
+		return { self:_accept(Token.Kind.QuotedString) }
 	end
 
 	-- Since we've already checked for all other forms of providing function
@@ -632,7 +632,7 @@ function Parser:parsePrimaryExpr()
 		elseif
 			self:_peek(Token.Kind.LeftParen)
 			or self:_peek(Token.Kind.LeftBrace)
-			or self:_peek(Token.Kind.String)
+			or self:_peek(Token.Kind.QuotedString)
 		then
 			expr = AstNode.new(AstNode.Kind.FunctionCall, expr, self:parseFunctionArgs())
 		else

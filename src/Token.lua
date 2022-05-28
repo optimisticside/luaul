@@ -20,12 +20,13 @@ Token.Kind = enumerate("Token.Kind", {
 	"Caret", "SemiColon", "Colon", "Dot", "Dot2", "Dot3", "SkinnyArrow",
 	"NotEqual", "Equal", "LessThan", "LessEqual", "GreaterThan", "GreaterEqual",
 	"LeftParen", "RightParen", "LeftBracket", "RightBracket", "LeftBrace", "RightBrace",
+	"DoubleColon",
 
 	-- Compound operators
 	"PlusEqual", "MinusEqual", "StarEqual", "SlashEqual",
 
 	-- Other things
-	"QuotedString", "Comment", "Name",
+	"QuotedString", "LongString", "Comment", "Name",
 })
 
 function Token.new(tokenKind, startPosition, endPosition, value)
