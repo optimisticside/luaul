@@ -200,7 +200,7 @@ function Parser:_parseList(subParser, delimiter)
 end
 
 function Parser:genericBinary(tokens, subParser)
-	local left = subParser()
+	local left = subParser(self)
 
 	if not self._token then
 		return left
@@ -227,7 +227,7 @@ function Parser:genericBinary(tokens, subParser)
 end
 
 function Parser:genericPrefix(tokens, subParser)
-	local left = subParser()
+	local left = subParser(self)
 	local stack = {}
 
 	if not left then
@@ -260,7 +260,7 @@ function Parser:genericPrefix(tokens, subParser)
 end
 
 function Parser:genericPostfix(tokens, subParser)
-	local left = subParser()
+	local left = subParser(self)
 
 	while true do
 		local token = nil
