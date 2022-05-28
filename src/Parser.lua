@@ -444,6 +444,14 @@ function Parser:parseName(context)
 	return self:_expect(Token.Kind.Name)
 end
 
+function Parser:parseGenericTypeList()
+	if self:_accept(Token.Kind.LessThan) then
+		-- TODO: Implement this later.
+		
+		self:_expect(Token.Kind.GreaterThan)
+	end
+end
+
 function Parser:parseSimpleTypeAnnotation()
 	-- We should have a better system for builin types that don't rely
 	-- on the actual keywords, like `nil` and `true`.
