@@ -390,6 +390,7 @@ function Parser:parseSimpleExpr()
 	-- can be found through a table.
 	local nodeKind = Parser.SimpleTokens[self._token.kind]
 	if nodeKind then
+		self:_advance()
 		return AstNode.new(nodeKind)
 	end
 
@@ -609,7 +610,7 @@ end
 
 function Parser:parseFunctionArgs(selfParameter)
 	local args = {}
-	
+
 	if self:_peek(Token.Kind.LeftBrace) then
 		args = { self:parseTableConstructor() }
 
@@ -621,8 +622,10 @@ function Parser:parseFunctionArgs(selfParameter)
 		-- arguments, we can expect the user to provide normal function arguments
 		-- with parentheses.
 		self:_expect(Token.Kind.LeftParen)
-		args = self:parseExprList()
-		self:_expect(Token.Kind.RightParen)
+		if not self:_accept(Token.Kind.RightParen) then
+			args = self:parseExprList()
+			self:_expect(Token.Kind.RightParen)
+		end
 	end
 
 	if selfParameter then
@@ -877,9 +880,10 @@ function Parser:parseBlock()
 
 	repeat
 		stat = self:parseStat()
+		print(stat)
 		table.insert(stats, stat)
 		self:_accept(Token.Kind.SemiColon)
-	until not Parser.isLastStat(stat) or not stat
+	until not stat or Parser.isLastStat(stat)
 
 	return AstNode.fromArray(AstNode.Kind.Block, stats)
 end
