@@ -281,6 +281,15 @@ function Parser:genericPostfix(tokens, subParser)
 	return left
 end
 
+function Parser:parseAssertionExpr()
+	local expr = self:parseSimpleExpr()
+	if self._options.allowTypeAnnotations and self:_accept(Token.Kind.DoubleColon) then
+		return AstNode.new(AstNode.Kind.TypeAssertionExpr, expr, self:parseTypeAnnotation())
+	end
+
+	return expr
+end
+
 -- Generic operator usage.
 Parser.parsePow = Parser.useGeneric(Parser.genericBinary, Parser.parseAssertionExpr, Token.Kind.Caret)
 Parser.parseUnary = Parser.useGeneric(Parser.genericPrefix, Parser.genericBinary,
@@ -292,7 +301,7 @@ Parser.parseMulExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseMulExp
 
 Parser.parseSumExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseMulExpr, Token.Kind.Plus, Token.Kind.Minus)
 Parser.parseConcatExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseSumExpr, Token.Kind.Dot2)
-Parser.parseCompareExpr = Parser.useGeneric(Parser.genericBinary, Parser.pprseConcatExpr, Token.Kind.LessThan,
+Parser.parseCompareExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseConcatExpr, Token.Kind.LessThan,
 	Token.Kind.LessEqual, Token.Kind.GreaterThan, Token.Kind.GreaterEqual, Token.Kind.Equal, Token.Kind.NotEqual)
 
 Parser.parseAndExpr = Parser.useGeneric(Parser.genericBinary, Parser.parseCompareExpr, Token.Kind.And)
