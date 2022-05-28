@@ -72,6 +72,7 @@ Lexer.UnsortedOperators = {
 	["."] = Token.Kind.Dot,
 	[".."] = Token.Kind.Dot2,
 	["..."] = Token.Kind.Dot3,
+	["::"] = Token.Kind.DoubleColon,
 	["->"] = Token.Kind.SkinnyArrow,
 
 	["~="] = Token.Kind.NotEqual,
