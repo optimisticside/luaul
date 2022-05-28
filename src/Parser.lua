@@ -58,7 +58,7 @@ function Parser.new(tokens, options, advancer)
 	local self = {}
 	setmetatable(self, Parser)
 
-	local index = 1
+	local index = 0
 	self._advancer = advancer or function()
 		index = index + 1
 		if index < #self._tokens then
@@ -403,6 +403,18 @@ function Parser:parseSimpleExpr()
 		return self:parseIfElseExpr()
 	end
 
+	-- String parser.
+	local str = self:_accept(Token.Kind.QuotedString) or self:_accept(Token.Kind.LongString)
+	if str then
+		return AstNode.new(AstNode.Kind.String, str)
+	end
+
+	-- Number parser.
+	local number = self:_accept(Token.Kind.Number)
+	if number then
+		return AstNode.new(AstNode.Kind.Number, number)
+	end
+
 	return self:parsePrimaryExpr()
 end
 
@@ -596,31 +608,25 @@ function Parser:parseTypeAnnotation()
 end
 
 function Parser:parseFunctionArgs(selfParameter)
-	-- TODO: these first two cases do not take `selfParameter` into account.
-	if self:_peek(Token.Kind.LeftBrace) then
-		return { self:parseTableConstructor() }
-	end
-
-	if self:_peek(Token.Kind.QuotedString) then
-		return { self:_accept(Token.Kind.QuotedString) }
-	end
-
-	-- Since we've already checked for all other forms of providing function
-	-- arguments, we can expect the user to provide normal function arguments
-	-- with parentheses.
-	self:_expect(Token.Kind.LeftParen)
-
 	local args = {}
-	if selfParameter then
-		table.insert(args, selfParameter)
+	
+	if self:_peek(Token.Kind.LeftBrace) then
+		args = { self:parseTableConstructor() }
+
+	elseif self:_peek(Token.Kind.QuotedString) then
+		args = { self:_accept(Token.Kind.QuotedString) }
+
+	else
+		-- Since we've already checked for all other forms of providing function
+		-- arguments, we can expect the user to provide normal function arguments
+		-- with parentheses.
+		self:_expect(Token.Kind.LeftParen)
+		args = self:parseExprList()
+		self:_expect(Token.Kind.RightParen)
 	end
 
-	while not self:_accept(Token.Kind.RightParen) do
-		if #args then
-			self:_expect(Token.Kind.Comma)
-		end
-
-		table.insert(args, self:parseExpr())
+	if selfParameter then
+		table.insert(args, 1, selfParameter)
 	end
 
 	return args

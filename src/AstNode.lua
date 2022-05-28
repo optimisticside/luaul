@@ -12,6 +12,7 @@ AstNode.__index = AstNode
 AstNode.Kind = enumerate("AstNode.Kind", {
 	-- Simple types
 	"True", "False", "Nil", "Dot3",
+	"String", "Number",
 
 	-- Unary operators
 	"Len", "Neg", "Not",

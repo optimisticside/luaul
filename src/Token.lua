@@ -22,6 +22,9 @@ Token.Kind = enumerate("Token.Kind", {
 	"LeftParen", "RightParen", "LeftBracket", "RightBracket", "LeftBrace", "RightBrace",
 	"DoubleColon",
 
+	-- Delimiters
+	"Comma", "SemiColon",
+
 	-- Compound operators
 	"PlusEqual", "MinusEqual", "StarEqual", "SlashEqual",
 

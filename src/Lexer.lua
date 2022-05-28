@@ -66,6 +66,7 @@ Lexer.UnsortedOperators = {
 	["/="] = Token.Kind.SlashEqual,
 
 	["^"] = Token.Kind.Caret,
+	[","] = Token.Kind.Comma,
 	[";"] = Token.Kind.SemiColon,
 	[":"] = Token.Kind.Colon,
 	["."] = Token.Kind.Dot,
