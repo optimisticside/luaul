@@ -61,7 +61,7 @@ function Parser.new(tokens, options, advancer)
 	local index = 0
 	self._advancer = advancer or function()
 		index = index + 1
-		if index < #self._tokens then
+		if index <= #self._tokens then
 			return self._tokens[index]
 		end
 	end
@@ -367,6 +367,8 @@ function Parser:parseIfElseExpr()
 end
 
 function Parser:parseTableConstructor()
+	self:_expect(Token.Kind.LeftBrace)
+
 	local canContinue = true
 	local fields = {}
 
@@ -841,10 +843,14 @@ function Parser:parseStat()
 
 		-- Local variable defenitions.
 		else
+			print("local")
 			local bindings = self:parseBindingList()
+			print(2)
 			self:_expect(Token.Kind.Equal)
 
+			print(3)
 			local values = self:parseExprList()
+			print(4)
 			return AstNode.new(AstNode.Kind.Local, bindings, values)
 		end
 	end
