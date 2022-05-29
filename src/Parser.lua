@@ -425,13 +425,13 @@ function Parser:parseSimpleExpr()
 	-- String parser.
 	local str = self:_accept(Token.Kind.QuotedString) or self:_accept(Token.Kind.LongString)
 	if str then
-		return AstNode.new(AstNode.Kind.String, str)
+		return AstNode.fromValue(AstNode.Kind.String, str.value)
 	end
 
 	-- Number parser.
 	local number = self:_accept(Token.Kind.Number)
 	if number then
-		return AstNode.new(AstNode.Kind.Number, number)
+		return AstNode.fromValue(AstNode.Kind.Number, number.value)
 	end
 
 	return self:parsePrimaryExpr()
@@ -475,9 +475,9 @@ function Parser:parseTypeParams()
 	-- TODO: Implement this.
 end
 
--- luacheck: ignore
-function Parser:parseName(context)
-	return self:_expect(Token.Kind.Name)
+function Parser:parseName()
+	local name = self:_expect(Token.Kind.Name)
+	return AstNode.fromValue(AstNode.Kind.Name, name.value)
 end
 
 function Parser:parseGenericTypeList()
@@ -492,20 +492,20 @@ function Parser:parseSimpleTypeAnnotation()
 	-- We should have a better system for builin types that don't rely
 	-- on the actual keywords, like `nil` and `true`.
 	if self:_accept(Token.Kind.ReservedNil) then
-		return AstNode.new(AstNode.Kind.TypeReference, AstNode.Kind.Nil)
+		return AstNode.fromValue(AstNode.Kind.TypeReference, nil)
 	end
 
 	if self:_accept(Token.Kind.ReservedTrue) then
-		return AstNode.new(AstNode.Kind.SingletonBool, AstNode.Kind.True)
+		return AstNode.fromValue(AstNode.Kind.SingletonBool, true)
 	end
 
 	if self:_accept(Token.Kind.ReservedFalse) then
-		return AstNode.new(AstNode.Kind.SingletonBool, AstNode.Kind.False)
+		return AstNode.fromValue(AstNode.Kind.SingletonBool, false)
 	end
 
 	local stringType = self:_accept(Token.Kind.QuotedString) or self:_accept(Token.Kind.LongString)
 	if stringType then
-		return AstNode.new(AstNode.Kind.SingletonString, stringType)
+		return AstNode.fromValue(AstNode.Kind.SingletonString, stringType.value)
 	end
 
 	if self:_peek(Token.Kind.Name) then
@@ -628,6 +628,14 @@ function Parser:parseTypeAnnotation()
 	-- If we didn't have an intersection or a union, then we can assume we
 	-- only had 1 element in the array.
 	return parts[1]
+end
+
+function Parser:parseTypeAlias(isExported)
+	local name = self:parseName()
+	local generics = self:parseGenericTypeList(true)
+
+	self:_expect(Token.Kind.Equal)
+	return AstNode.new(AstNode.Kind.TypeAlias, name, generics, self:parseTypeAnnotation(), isExported)
 end
 
 function Parser:parseFunctionArgs(selfParameter)
@@ -882,12 +890,12 @@ function Parser:parseStat()
 	-- keywords so we handle them as if they were identifiers.
 	-- TODO: Take another look at this code. Identifiers should be same thing
 	-- as names.
-	if expr.kind == AstNode.Kind.Iden then
+	if expr.kind == AstNode.Kind.Name then
 		if self._options.allowTypeAnnotations then
 			-- I did not know that `type` was actually an operator until now.
 			if expr.value == "type" then
 				return self:parseTypeAlias(expr, false)
-			elseif expr.value == "export" and self._token.kind == Token.Kind.Iden and self._token.value == "type" then
+			elseif expr.value == "export" and self._token.kind == Token.Kind.Name and self._token.value == "type" then
 				return self:parseTypeAlias(expr, true)
 			end
 		end
@@ -899,9 +907,9 @@ function Parser:parseStat()
 		if self._options.allowTypeAnnotations and expr.value == "declare" then
 			return self:parseDeclaration()
 		end
-
-		return self:_error("Incomplete statement: expected assignment or a function call")
 	end
+
+	return self:_error("Incomplete statement: expected assignment or a function call")
 end
 
 function Parser:parseBlock()

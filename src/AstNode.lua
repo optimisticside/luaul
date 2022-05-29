@@ -12,7 +12,7 @@ AstNode.__index = AstNode
 AstNode.Kind = enumerate("AstNode.Kind", {
 	-- Simple types
 	"True", "False", "Nil", "Dot3",
-	"String", "Number",
+	"String", "Number", "Name",
 
 	-- Unary operators
 	"Len", "Neg", "Not",
@@ -40,10 +40,11 @@ AstNode.Kind = enumerate("AstNode.Kind", {
 	"SingletonBool", "SingletonString",
 })
 
-function AstNode.fromArray(nodeKind, children)
+function AstNode.fromArray(nodeKind, children, value)
 	local self = {}
 	setmetatable(self, AstNode)
 
+	self.value = value
 	self.kind = nodeKind
 	self.children = children
 
@@ -51,7 +52,11 @@ function AstNode.fromArray(nodeKind, children)
 end
 
 function AstNode.new(nodeKind, ...)
-	return AstNode.fromArray(nodeKind, table.pack(...))
+	return AstNode.fromArray(nodeKind, nil, table.pack(...))
+end
+
+function AstNode.fromValue(nodeKind, value, ...)
+	return AstNode.fromArray(nodeKind, table.pack(...), value)
 end
 
 function AstNode.is(object)
