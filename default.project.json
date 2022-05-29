@@ -1,12 +1,6 @@
 {
   "name": "luau-parse",
   "tree": {
-    "$className": "DataModel",
-
-    "ReplicatedStorage": {
-      "Luau": {
-        "$path": "src"
-      }
-    }
+    "$path": "src"
   }
 }
