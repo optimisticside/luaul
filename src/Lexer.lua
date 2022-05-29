@@ -183,6 +183,18 @@ function Lexer:_accept(toMatch)
 	end
 end
 
+--[[
+	Tries to accept a string and throws an error if unable to.
+]]
+function Lexer:_expect(toMatch)
+	local match = self:_accept(toMatch)
+	if not match then
+		self:_error(("Expected %s"):format(toMatch))
+	end
+
+	return match
+end
+
 function Lexer:readQuotedString()
 	local start = self._position
 	local quote = self:_accept("'") or self:_accept('"')
@@ -218,7 +230,7 @@ function Lexer:readLongString(isComment, start)
 		startCount = startCount + 1
 	end
 
-	self:_expect("]")
+	self:_expect("[")
 	local content = {}
 	local suffix = "]" .. ("="):rep(startCount) .. "]"
 

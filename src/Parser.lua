@@ -135,7 +135,7 @@ function Parser.isFollowingBlock(token)
 	-- TODO: We might want to replace this with something like
 	-- table.find({ ... }, token.kind)
 	-- (same applies for Parser::isExprLValue)
-	return token.Kind == Token.Kind.EndOfFile
+	return token.kind == Token.Kind.EndOfFile
 		or token.kind == Token.Kind.ReservedElse
 		or token.kind == Token.Kind.ReservedElseIf
 		or token.kind == Token.Kind.ReservedEnd
@@ -843,14 +843,10 @@ function Parser:parseStat()
 
 		-- Local variable defenitions.
 		else
-			print("local")
 			local bindings = self:parseBindingList()
-			print(2)
 			self:_expect(Token.Kind.Equal)
 
-			print(3)
 			local values = self:parseExprList()
-			print(4)
 			return AstNode.new(AstNode.Kind.Local, bindings, values)
 		end
 	end
@@ -912,11 +908,19 @@ function Parser:parseBlock()
 	local stats = {}
 	local stat
 
-	repeat
+	while not Parser.isFollowingBlock(self._token) do
 		stat = self:parseStat()
-		table.insert(stats, stat)
+		if not stat then
+			break
+		end
+
 		self:_accept(Token.Kind.SemiColon)
-	until not stat or Parser.isLastStat(stat) or Parser.isFollowingBlock(self._token)
+		table.insert(stats, stat)
+
+		if Parser.isLastStat(stat) then
+			break
+		end
+	end
 
 	return AstNode.fromArray(AstNode.Kind.Block, stats)
 end
@@ -926,7 +930,10 @@ end
 --]]
 function Parser:parseChunk()
 	local root = self:parseBlock()
+
+	self:_accept(Token.Kind.EndOfFile)
 	self.result = root
+
 	return root
 end
 
