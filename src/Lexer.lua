@@ -58,7 +58,7 @@ Lexer.UnsortedOperators = {
 	["/"] = Token.Kind.Slash,
 	["%"] = Token.Kind.Modulo,
 	["#"] = Token.Kind.Hashtag,
-	["?"] = Token.Kind.QuestionMark,
+	["="] = Token.Kind.Equal,
 
 	["+="] = Token.Kind.PlusEqual,
 	["-="] = Token.Kind.MinusEqual,
@@ -77,9 +77,10 @@ Lexer.UnsortedOperators = {
 	["->"] = Token.Kind.SkinnyArrow,
 	["|"] = Token.Kind.Pipe,
 	["&"] = Token.Kind.Ampersand,
+	["?"] = Token.Kind.QuestionMark,
 
 	["~="] = Token.Kind.NotEqual,
-	["="] = Token.Kind.Equal,
+	["=="] = Token.Kind.EqualTo,
 	["<"] = Token.Kind.LessThan,
 	["<="] = Token.Kind.LessEqual,
 	[">"] = Token.Kind.GreaterThan,

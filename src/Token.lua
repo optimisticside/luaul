@@ -16,16 +16,15 @@ Token.Kind = enumerate("Token.Kind", {
 	"ReservedOr", "ReservedRepeat", "ReservedReturn", "ReservedThen", "ReservedTrue", "ReservedUntil", "ReservedWhile",
 
 	-- Operators
-	"Plus", "Minus", "Star", "Slash", "Modulo", "Hashtag", "QuestionMark",
-	"Caret", "SemiColon", "Colon", "Dot", "Dot2", "Dot3", "SkinnyArrow",
-	"NotEqual", "Equal", "LessThan", "LessEqual", "GreaterThan", "GreaterEqual",
+	"Plus", "Minus", "Star", "Slash", "Modulo", "Hashtag", "Caret", "SemiColon", "Colon", "Dot", "Dot2", "Dot3", "Equal",
+	"NotEqual", "EqualTo", "LessThan", "LessEqual", "GreaterThan", "GreaterEqual",
 	"LeftParen", "RightParen", "LeftBracket", "RightBracket", "LeftBrace", "RightBrace",
 
 	-- Delimiters
 	"Comma", "SemiColon",
 
 	-- Type-related operators
-	"DoubleColon", "Pipe", "Ampersand",
+	"DoubleColon", "Pipe", "Ampersand", "SkinnyArrow", "QuestionMark",
 
 	-- Compound operators
 	"PlusEqual", "MinusEqual", "StarEqual", "SlashEqual",

@@ -39,7 +39,7 @@ Parser.BinaryOpers = {
 	[Token.Kind.Caret] = AstNode.Kind.Pow,
 	[Token.Kind.Dot2] = AstNode.Kind.Concat,
 	[Token.Kind.NotEqual] = AstNode.Kind.CompareNe,
-	[Token.Kind.Equal] = AstNode.Kind.CompareEq,
+	[Token.Kind.EqualTo] = AstNode.Kind.CompareEq,
 	[Token.Kind.LessThan] = AstNode.Kind.CompareLt,
 	[Token.Kind.LessEqual] = AstNode.Kind.CompareLe,
 	[Token.Kind.GreaterThan] = AstNode.Kind.CompareGt,
@@ -336,7 +336,7 @@ Parser.parseCompareExpr = Parser.useGeneric(
 	Token.Kind.LessEqual,
 	Token.Kind.GreaterThan,
 	Token.Kind.GreaterEqual,
-	Token.Kind.Equal,
+	Token.Kind.EqualTo,
 	Token.Kind.NotEqual
 )
 
@@ -436,6 +436,7 @@ function Parser:parsePrefixExpr()
 	if self:_accept(Token.Kind.LeftParen) then
 		local expr = self:parseExpr()
 		self:_expect(Token.Kind.RightParen)
+
 		return expr
 	end
 
@@ -576,6 +577,7 @@ function Parser:parseSimpleTypeAnnotation()
 		if self:_accept(Token.Kind.LeftParen) then
 			local returnType = self:parseTypeList()
 			self:_expect(Token.Kind.RightParen)
+
 			return AstNode.new(AstNode.Kind.TypeFunction, generics, params, returnType)
 		end
 
