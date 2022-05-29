@@ -843,7 +843,11 @@ function Parser:parseStat()
 	end
 
 	if self:_accept(Token.Kind.ReservedReturn) then
-		local exprList = self:parseExprList()
+		local exprList = nil
+		if not Parser.isFollowingBlock(self._token) and not self:_peek(Token.Kind.SemiColon) then
+			self:parseExprList()
+		end
+
 		return AstNode.new(AstNode.Kind.Return, exprList)
 	end
 
@@ -897,6 +901,8 @@ function Parser:parseBlock()
 
 	repeat
 		stat = self:parseStat()
+		print(Parser.isLastStat(stat), Parser.isFollowingBlock(self._token), self._token)
+
 		table.insert(stats, stat)
 		self:_accept(Token.Kind.SemiColon)
 	until not stat or Parser.isLastStat(stat) or Parser.isFollowingBlock(self._token)
