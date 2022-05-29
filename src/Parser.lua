@@ -703,8 +703,12 @@ function Parser:parseAssignment(left)
 		return self:_error("Assigned expression must be a variable or field")
 	end
 
-	local values = self:_parseList(Parser.parseSimpleExpr, Token.Kind.Comma)
-	return AstNode.new(AstNode.Kind.Assign, left, values)
+	local values = { left }
+	for _, value in ipairs(self:_parseList(Parser.parsePrimaryExpr, Token.Kind.Comma)) do
+		table.insert(values, value)
+	end
+
+	return AstNode.new(AstNode.Kind.Assign, values, self:parseExprList())
 end
 
 function Parser:parseStat()
@@ -901,8 +905,6 @@ function Parser:parseBlock()
 
 	repeat
 		stat = self:parseStat()
-		print(Parser.isLastStat(stat), Parser.isFollowingBlock(self._token), self._token)
-
 		table.insert(stats, stat)
 		self:_accept(Token.Kind.SemiColon)
 	until not stat or Parser.isLastStat(stat) or Parser.isFollowingBlock(self._token)
