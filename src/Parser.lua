@@ -132,6 +132,9 @@ end
 	Used by Parser::parseBlock to see when to stop the statement-paring loop.
 ]]
 function Parser.isFollowingBlock(token)
+	-- TODO: We might want to replace this with something like
+	-- table.find({ ... }, token.kind)
+	-- (same applies for Parser::isExprLValue)
 	return token.Kind == Token.Kind.EndOfFile
 		or token.kind == Token.Kind.ReservedElse
 		or token.kind == Token.Kind.ReservedElseIf
