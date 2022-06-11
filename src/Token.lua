@@ -1,6 +1,6 @@
--- OptimisticSide
--- 5/1/2022
--- Lexical token implementation
+--[[
+	Lexical token implementation.
+]]
 
 -- luacheck: push globals script
 local enumerate = require(_VERSION == "Luau" and script.Parent.enumerate or "./enumerate.lua")

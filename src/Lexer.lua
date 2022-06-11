@@ -1,6 +1,6 @@
--- OptimisticSide
--- 5/2/2022
--- Lexical scanner
+--[[
+	Lexical scanner.
+]]
 
 -- luacheck: push globals script
 local Token = require(_VERSION == "Luau" and script.Parent.Token or "./Token.lua")

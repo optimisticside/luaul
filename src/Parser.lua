@@ -1,6 +1,6 @@
--- OptimisticSide
--- 5/1/2022
--- Luau parser
+--[[
+	Luau parser implemented in luau.
+]]
 
 -- luacheck: push globals script
 local AstNode = require(_VERSION == "Luau" and script.Parent.AstNode or "./AstNode.lua")
@@ -628,6 +628,25 @@ function Parser:parseTypeAnnotation()
 	-- If we didn't have an intersection or a union, then we can assume we
 	-- only had 1 element in the array.
 	return parts[1]
+end
+
+function Parser:parseGenericTypeList()
+	local types = {}
+	local typePacks = {}
+
+	if self:_accept(Token.Kind.LessThan) then
+		local canContinue = false
+
+		local seenDefault = false
+		local seenPack = false
+
+		while canContinue and not self:_accept(Token.Kind.GreaterThan) do
+			if self:_accept(Token.Kind.Dot3) and not seenPack then
+				seenPack = true
+				
+			end
+		end
+	end
 end
 
 function Parser:parseTypeAlias(isExported)
