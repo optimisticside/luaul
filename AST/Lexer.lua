@@ -3,7 +3,7 @@
 ]]
 
 -- luacheck: push globals script
-local Token = require(_VERSION == "Luau" and game and script.Parent.Token or "./Token.lua")
+local Token = require(script and script.Parent.Token or "./Token.lua")
 -- luacheck: pop
 
 local Lexer = {}

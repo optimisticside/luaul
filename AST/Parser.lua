@@ -3,8 +3,8 @@
 ]]
 
 -- luacheck: push globals script
-local AstNode = require(_VERSION == "Luau" and game and script.Parent.AstNode or "./AstNode.lua")
-local Token = require(_VERSION == "Luau" and game and script.Parent.Token or "./Token.lua")
+local AstNode = require(script and script.Parent.AstNode or "./AstNode.lua")
+local Token = require(script and script.Parent.Token or "./Token.lua")
 -- luacheck: pop
 
 local Parser = {}
