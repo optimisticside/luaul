@@ -3,7 +3,7 @@
 ]]
 
 -- luacheck: push globals script
-local enumerate = require(script and script.Parent.enumerate or "./enumerate.lua")
+local enumerate = require(script and script.Parent.Parent.enumerate or "../Common/enumerate.lua")
 -- luacheck: pop
 
 local AstNode = {}
