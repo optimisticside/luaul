@@ -479,15 +479,64 @@ function Parser:parseName()
 	return AstNode.fromValue(AstNode.Kind.Name, name.value)
 end
 
-function Parser:parseGenericTypeList()
+function Parser:parseTypeOrPackAnnotation()
+	local type, typePack = self:parseSimpleTypeAnnotation(true)
+	if typePack then
+		return nil, typePack
+	end
+	
+	return self:parseTypeAnnotation({ type })
+end
+
+function Parser:parseGenericTypeList(withDefaultValues)
+	local names = {}
+	local namePacks = {}
+
 	if self:_accept(Token.Kind.LessThan) then
-		-- TODO: Implement this later.
-		
-		self:_expect(Token.Kind.GreaterThan)
+		local canContinue = false
+
+		local seenDefault = false
+		local seenPack = false
+
+		while canContinue and not self:_accept(Token.Kind.GreaterThan) do
+			local name = self:parseName()
+
+			if self:_accept(Token.Kind.Dot3) and not seenPack then
+				seenPack = true
+
+				if self:shouldParseTypePackAnnotation() then
+					local defaultType = self:parseTypeAnnotation()
+					table.insert(names, { name, defaultType })
+
+				elseif self:_accept(Token.Kind.LeftParen) then
+					local type, typePack = self:parseTypeOrPackAnnotation()
+					if type then
+						self:_error("Expected type pack annotation, but got type annotation.")
+					end
+
+					table.insert(namePacks, { name, typePack })
+				end
+			else
+				if withDefaultValues and self:_accept(Token.Kind.Equals) then
+					seenDefault = true
+
+					local defaultType = self:parseTypeAnnotation()
+					table.insert(names, { name, defaultType })
+				
+				else
+					if seenDefault then
+						self:_error("Expected default type after type name")
+					end
+
+					table.insert(names, { name, nil })
+				end
+			end
+		end
 	end
 end
 
-function Parser:parseSimpleTypeAnnotation()
+
+function Parser:parseSimpleTypeAnnotation(allowPack)
 	-- We should have a better system for builin types that don't rely on the
 	-- actual keywords, like `nil` and `true`.
 	if self:_accept(Token.Kind.ReservedNil) then
@@ -515,6 +564,8 @@ function Parser:parseSimpleTypeAnnotation()
 		if self:_accept(Token.Kind.Dot) then
 			prefix = name
 			name = self:parseName()
+		elseif self:_accept(Token.Kind.Ellipses) then
+			self:_error("Unexpected '...' after type name; type pack is not allowed in this context")
 		elseif name.value == "typeof" then
 			self:_expect(Token.Kind.LeftParen)
 			local expr = self:parseExpr()
@@ -575,7 +626,17 @@ function Parser:parseSimpleTypeAnnotation()
 		end
 
 		self:_expect(Token.Kind.RightParen)
-		self:_expect(Token.Kind.SkinnyArrow)
+
+		local hasReturnType = self:_accept(Token.Kind.SkinnyArrow) or self:_accept(Token.Kind.Colon)
+		-- There is a chance that this is not a function at all, and is instead
+		-- a type wrapped in parentheses.
+		if params and #params == 1 and not hasReturnType then
+			if allowPack then
+				return nil, AstNode.new(AstNode.Kind.TypeList, params)
+			else
+				return params[0]
+			end
+		end
 
 		-- Return types can also be type lists wrapped in parentheses.
 		if self:_accept(Token.Kind.LeftParen) then
@@ -589,8 +650,8 @@ function Parser:parseSimpleTypeAnnotation()
 	end
 end
 
-function Parser:parseTypeAnnotation()
-	local parts = { self:parseSimpleTypeAnnotation() }
+function Parser:parseTypeAnnotation(parts)
+	parts = parts or { self:parseSimpleTypeAnnotation() }
 	local isIntersection = false
 	local isUnion = false
 
@@ -627,25 +688,6 @@ function Parser:parseTypeAnnotation()
 	-- If we didn't have an intersection or a union, then we can assume we only
 	-- had 1 element in the array.
 	return parts[1]
-end
-
-function Parser:parseGenericTypeList()
-	local types = {}
-	local typePacks = {}
-
-	if self:_accept(Token.Kind.LessThan) then
-		local canContinue = false
-
-		local seenDefault = false
-		local seenPack = false
-
-		while canContinue and not self:_accept(Token.Kind.GreaterThan) do
-			if self:_accept(Token.Kind.Dot3) and not seenPack then
-				seenPack = true
-				
-			end
-		end
-	end
 end
 
 function Parser:parseTypeAlias(isExported)
