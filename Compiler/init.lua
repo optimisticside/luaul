@@ -2,6 +2,16 @@
 	Compiler for Luau.
 ]]
 
+local MAX_REGISTER_COUNT = 255
+local MAX_UPVALUE_COUNT = 200
+local MAX_LOCAL_COUNT = 200
+
+local ConstantFolding = require(script and script.Parent.ConstantFolding or "./ConstantFolding")
+local RegisterScope = require(script and script.Parent.RegisterScope or "./RegisterScope")
+
+local Opcodes = require(script and script.Parent.Parent.Common.Opcodes or "../Common/Opcodes")
+local AstNode = require(script and script.Parent.Parent.AstNode or "../Ast/AstNode")
+
 local Compiler = {}
 Compiler.__index = Compiler
 
@@ -33,17 +43,17 @@ function Compiler.new(bytecodeBuilder, options)
 	self._options = Compiler._parseOptions(options or {})
 	self._bytecode = bytecodeBuilder
 
-	self._functions = {}
-	self._locals = {}
-	self._globals = {}
-	self._variables = {}
-	self._constants = {}
-	self._localConstants = {}
-	self._tableShapes = {}
-	self._builtins = {}
+	self.functions = {}
+	self.locals = {}
+	self.globals = {}
+	self.variables = {}
+	self.constants = {}
+	self.localConstants = {}
+	self.tableShapes = {}
+	self.builtins = {}
 
-	self._regTop = 0
-	self._stackSize = 0
+	self.regTop = 0
+	self.stackSize = 0
 
 	self._getfenvUsed = false
 	self._setfenvUsed = false
@@ -70,8 +80,90 @@ function Compiler._parseOptions(options)
 	return options
 end
 
-function Compiler:compileStat(stat)
+function Compiler:isConstantFalse(astNode)
+	local constant = self.constants[astNode]
+	return constant and not constant:isTruthful()
+end
+
+--[[
+	Allocates the given number of registers.
+]]
+function Compiler:allocateRegister(astNode, count)
+	local top = self.registerTop
+	if top + count > MAX_REGISTER_COUNT then
+		self:_error(
+			"Out of registers when trying to allocate %d registers: exceeded limit %d",
+			count,
+			MAX_REGISTER_COUNT
+		)
+	end
+
+	self.registerTop = self.registerTop + count
+	self.stackSize = math.max(self.stackSize, self.registerTop)
+	return top
+end
+
+--[[
+	Push a local variable into the local-register.
+]]
+function Compiler:pushLocal(astNode, register)
+	if #self._localStack > MAX_LOCAL_COUNT then
+		self:_error(
+			"Out of local registers when trying to allocate %s: exceeded limit %d",
+			astNode.name.value,
+			MAX_LOCAL_COUNT
+		)
+	end
+
+	table.insert(self._localStack, astNode)
+	local localVariable = self.locals[astNode]
+	localVariable.register = register
+	localVariable.allocated = true
+end
+
+--[[
+	Closes all locals that are placed after the given start position (acts as
+	a base-pointer of sorts).
+]]
+function Compiler:closeLocals(startPosition)
+	local captureRegister = 255
+	local isCaptured = false
+
+	for i = startPosition, #self._localStack do
+		local localVariable = self.locals[self._localStack[i]]
+		if localVariable.captured then
+			isCaptured = true
+			captureRegister = math.min(captureRegister, localVariable.register)
+		end
+	end
+
+	if isCaptured then
+		self._bytecode:emitABC(Opcodes.CloseUpvalues, captureRegister, 0, 0)
+	end
+end
+
+function Compiler:compileStat(astNode)
+	if astNode.kind == AstNode.Kind.Block then
+		local registerScope = RegisterScope.new(self)
+		local oldStack = #self._localStack
+
+		for _, statement in ipairs(astNode.children) do
+			self:compileStat(statement)
+		end
 	
+		-- TODO: Close and pop locals.
+	elseif astNode.kind == AstNode.Kind.WhileLoop then
+		-- Optimization: Ignore loop if the condition is always false.
+		if self:isConstantFalse(astNode) then
+			return
+		end
+
+		local oldJumps = #self._loopJumps
+		local oldLocals = #self._localStack
+
+		local label = self._bytecode:emitLabel()
+		
+	end
 end
 
 --[[
@@ -79,7 +171,7 @@ end
 	source as a "main" function.
 ]]
 function Compiler:compileFunction(func)
-	
+	local 
 end
 
 return Compiler
