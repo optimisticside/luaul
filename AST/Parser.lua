@@ -54,7 +54,7 @@ Parser.DefaultOptions = {
 	captureComments = false,
 }
 
-function Parser.new(tokens, options, advancer)
+function Parser.new(tokens, names, options, advancer)
 	local self = {}
 	setmetatable(self, Parser)
 
@@ -67,6 +67,7 @@ function Parser.new(tokens, options, advancer)
 	end
 
 	self._tokens = tokens
+	self._names = names or {}
 	self._options = Parser._parseOptions(options or {})
 	self._token = self._advancer()
 
