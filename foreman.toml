@@ -1,0 +1,2 @@
+[tools]
+stylua = { source = "johnnymorganz/stylua", version = "x" }

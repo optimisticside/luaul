@@ -259,20 +259,20 @@ function Lexer:readComment()
 		table.insert(charArray, self:_advance())
 	end
 
-	local asString = table.concat(content)
+	local asString = table.concat(charArray)
 	return Token.new(Token.Kind.Comment, start, self._position, asString)
 end
 
 -- A name is just another term for an identifier.
 function Lexer:readName()
 	local start = self._position
-	local content = {}
+	local charArray = {}
 
 	while Lexer.NameChars:find(self:_peek(), 1, true) do
-		table.insert(content, self:_advance())
+		table.insert(charArray, self:_advance())
 	end
 
-	local asString = table.concat(content)
+	local asString = table.concat(charArray)
 	return Token.new(Token.Kind.Name, start, self._position, asString)
 end
 
