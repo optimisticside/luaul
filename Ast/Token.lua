@@ -1,10 +1,9 @@
 --[[
-	Lexical token implementation.
+	Lexical token implementation. Each token contains a value and a kind,
+	as well as debugging information such as where the token begins and ends.
 ]]
 
--- luacheck: push globals script
 local enumerate = require(script and script.Parent.Parent.enumerate or "../Common/enumerate.lua")
--- luacheck: pop
 
 local Token = {}
 Token.__index = Token

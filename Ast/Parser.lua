@@ -1,36 +1,35 @@
 --[[
-	Luau parser implemented in luau.
+	Recursive-descent parser implementation. The main routine is
+	Parser::parseChunk().
 ]]
 
--- luacheck: push globals script
 local AstNode = require(script and script.Parent.AstNode or "./AstNode.lua")
 local Token = require(script and script.Parent.Token or "./Token.lua")
--- luacheck: pop
 
 local Parser = {}
 Parser.__index = Parser
 
-Parser.SimpleTokens = {
+Parser.simpleTokens = {
 	[Token.Kind.ReservedTrue] = AstNode.Kind.True,
 	[Token.Kind.ReservedFalse] = AstNode.Kind.False,
 	[Token.Kind.ReservedNil] = AstNode.Kind.Nil,
 	[Token.Kind.Dot3] = AstNode.Kind.Dot3,
 }
 
-Parser.CompountOpers = {
+Parser.compountOpers = {
 	[Token.Kind.PlusEqual] = AstNode.Kind.Add,
 	[Token.Kind.MinusEqual] = AstNode.Kind.Sub,
 	[Token.Kind.StarEqual] = AstNode.Kind.Mul,
 	[Token.Kind.SlashEqual] = AstNode.Kind.Div,
 }
 
-Parser.UnaryOpers = {
+Parser.unaryOpers = {
 	[Token.Kind.Hashtag] = AstNode.Kind.Len,
 	[Token.Kind.ReservedNot] = AstNode.Kind.Not,
 	[Token.Kind.Minus] = AstNode.Kind.Neg,
 }
 
-Parser.BinaryOpers = {
+Parser.binaryOpers = {
 	[Token.Kind.Plus] = AstNode.Kind.Add,
 	[Token.Kind.Minus] = AstNode.Kind.Sub,
 	[Token.Kind.Star] = AstNode.Kind.Mul,
@@ -48,7 +47,7 @@ Parser.BinaryOpers = {
 	[Token.Kind.ReservedOr] = AstNode.Kind.Or,
 }
 
-Parser.DefaultOptions = {
+Parser.defaultOptions = {
 	allowTypeAnnotations = true,
 	supportContinueStatement = true,
 	captureComments = false,
@@ -64,6 +63,8 @@ function Parser.new(tokens, names, options, advancer)
 		if index <= #self._tokens then
 			return self._tokens[index]
 		end
+
+		return nil
 	end
 
 	self._tokens = tokens
@@ -98,7 +99,7 @@ end
 	provided by the user.
 ]]
 function Parser._parseOptions(options)
-	for option, default in pairs(Parser.DefaultOptions) do
+	for option, default in pairs(Parser.defaultOptions) do
 		options[option] = options[option] == nil and default or options[option]
 	end
 
@@ -169,6 +170,8 @@ function Parser:_accept(tokenKind)
 		self:_advance()
 		return token
 	end
+
+	return nil
 end
 
 --[[
@@ -179,6 +182,8 @@ function Parser:_peek(tokenKind)
 	if token and token.kind == tokenKind then
 		return token
 	end
+
+	return nil
 end
 
 --[[
@@ -239,7 +244,7 @@ function Parser:genericBinary(tokens, subParser)
 		end
 
 		local right = subParser(self)
-		local nodeKind = Parser.BinaryOpers[token]
+		local nodeKind = Parser.binaryOpers[token]
 		left = AstNode.new(nodeKind, left, right)
 	end
 
@@ -272,7 +277,7 @@ function Parser:genericPrefix(tokens, subParser)
 	-- We must use a numeric-for loop so that we can go backwards through the
 	-- stack, starting at the top.
 	for i = #stack, 1, -1 do
-		local nodeKind = Parser.UnaryOpers[stack[i]]
+		local nodeKind = Parser.unaryOpers[stack[i]]
 		left = AstNode.new(nodeKind, left)
 	end
 
@@ -294,7 +299,7 @@ function Parser:genericPostfix(tokens, subParser)
 			break
 		end
 
-		local nodeKind = Parser.UnaryOpers[token]
+		local nodeKind = Parser.unaryOpers[token]
 		left = AstNode.new(nodeKind, left)
 	end
 
@@ -406,7 +411,7 @@ end
 function Parser:parseSimpleExpr()
 	-- Parser for simple tokens, where the corresponding node can be found
 	-- through a table.
-	local nodeKind = Parser.SimpleTokens[self._token.kind]
+	local nodeKind = Parser.simpleTokens[self._token.kind]
 	if nodeKind then
 		self:_advance()
 		return AstNode.new(nodeKind)
@@ -649,6 +654,8 @@ function Parser:parseSimpleTypeAnnotation(allowPack)
 
 		return AstNode.new(AstNode.Kind.TypeFunction, generics, params, self:parseTypeAnnotation())
 	end
+
+	return nil
 end
 
 function Parser:parseTypeAnnotation(parts)
@@ -944,7 +951,7 @@ function Parser:parseStat()
 		return self:parseAssignment(expr)
 	end
 
-	local compoundOper = Parser.CompountOpers[self._token.kind]
+	local compoundOper = Parser.compountOpers[self._token.kind]
 	if compoundOper then
 		return self:parseCompoundAssignment()
 	end

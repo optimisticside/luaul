@@ -1,10 +1,10 @@
 --[[
-	Lexical scanner.
+	Lexical scanner implementation. Parses a stream of characters into a stream
+	of tokens, which can be provided to the parser to generate an
+	abstract-syntax-tree.
 ]]
 
--- luacheck: push globals script
 local Token = require(script and script.Parent.Token or "./Token.lua")
--- luacheck: pop
 
 local Lexer = {}
 Lexer.__index = Lexer
@@ -181,6 +181,8 @@ function Lexer:_accept(toMatch)
 		self._position = self._position + #toMatch
 		return toMatch
 	end
+	
+	return nil
 end
 
 --[[
@@ -198,7 +200,7 @@ end
 function Lexer:readQuotedString()
 	local start = self._position
 	local quote = self:_accept("'") or self:_accept('"')
-	local content = {}
+	local charArray = {}
 
 	while not self:_accept(quote) do
 		local character = self:_advance()
@@ -214,11 +216,11 @@ function Lexer:readQuotedString()
 			character = escapeChar
 		end
 
-		table.insert(content, character)
+		table.insert(charArray, character)
 	end
 
-	content = table.concat(content)
-	return Token.new(Token.Kind.QuotedString, start, self._position, content)
+	local asString = table.concat(charArray)
+	return Token.new(Token.Kind.QuotedString, start, self._position, asString)
 end
 
 function Lexer:readLongString(isComment, start)
@@ -231,33 +233,37 @@ function Lexer:readLongString(isComment, start)
 	end
 
 	self:_expect("[")
-	local content = {}
+	local charArray = {}
 	local suffix = "]" .. ("="):rep(startCount) .. "]"
 
 	while not self:_accept(suffix) do
-		table.insert(content, self:_advance())
+		table.insert(charArray, self:_advance())
 	end
 
-	content = table.concat(content)
+	local asString = table.concat(charArray)
 	local tokenKind = isComment and Token.Kind.Comment or Token.Kind.LongString
-	return Token.new(tokenKind, start, self._position, content)
+	return Token.new(tokenKind, start, self._position, asString)
 end
 
+--[[
+	Reads both multi-line and single-line comments.
+]]
 function Lexer:readComment()
 	local start = self._position
 	if self:_match("[") then
 		return self:readLongString(true, start)
 	end
 
-	local content = {}
+	local charArray = {}
 	while not self:_accept("\n") do
-		table.insert(content, self:_advance())
+		table.insert(charArray, self:_advance())
 	end
 
-	content = table.concat(content)
-	return Token.new(Token.Kind.Comment, start, self._position, content)
+	local asString = table.concat(content)
+	return Token.new(Token.Kind.Comment, start, self._position, asString)
 end
 
+-- A name is just another term for an identifier.
 function Lexer:readName()
 	local start = self._position
 	local content = {}
@@ -266,8 +272,8 @@ function Lexer:readName()
 		table.insert(content, self:_advance())
 	end
 
-	content = table.concat(content)
-	return Token.new(Token.Kind.Name, start, self._position, content)
+	local asString = table.concat(content)
+	return Token.new(Token.Kind.Name, start, self._position, asString)
 end
 
 function Lexer:readNumber()
@@ -280,10 +286,12 @@ end
 function Lexer:read()
 	local start = self._position
 
+	-- Single-line comments.
 	if self:_accept("--") then
 		return self:readComment()
 	end
 
+	-- Strings (both multi-line and single-line).
 	if self:_match("[[") or self:_match("[=") then
 		return self:readLongString()
 	end
@@ -321,6 +329,8 @@ function Lexer:read()
 	if Lexer.Alphabet:find(character, 1, true) then
 		return self:readName()
 	end
+
+	return nil
 end
 
 --[[

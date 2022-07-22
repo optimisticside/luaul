@@ -106,17 +106,17 @@ end
 --[[
 	Push a local variable into the local-register.
 ]]
-function Compiler:pushLocal(astNode, register)
+function Compiler:pushLocal(astLocal, register)
 	if #self._localStack > MAX_LOCAL_COUNT then
 		self:_error(
 			"Out of local registers when trying to allocate %s: exceeded limit %d",
-			astNode.name.value,
+			astLocal.name.value,
 			MAX_LOCAL_COUNT
 		)
 	end
 
-	table.insert(self._localStack, astNode)
-	local localVariable = self.locals[astNode]
+	table.insert(self._localStack, astLocal)
+	local localVariable = self.locals[astLocal]
 	localVariable.register = register
 	localVariable.allocated = true
 end
@@ -138,20 +138,30 @@ function Compiler:closeLocals(startPosition)
 	end
 
 	if isCaptured then
-		self._bytecode:emitABC(Opcodes.CloseUpvalues, captureRegister, 0, 0)
+		self._bytecode:emitABC(Opcodes.CloseUpvals, captureRegister, 0, 0)
+	end
+end
+
+--[[
+	Pops all locals off of the internal local-stack.
+]]
+function Compiler:popLocals(startPosition)
+	for i = startPosition, #self._localStack do
+		local localVariable = self.locals[self._localStack[i]]
+		localVariable.allocated = false
 	end
 end
 
 function Compiler:compileStat(astNode)
 	if astNode.kind == AstNode.Kind.Block then
-		local registerScope = RegisterScope.new(self)
+		local _registerScope = RegisterScope.new(self)
 		local oldStack = #self._localStack
 
 		for _, statement in ipairs(astNode.children) do
 			self:compileStat(statement)
 		end
 	
-		-- TODO: Close and pop locals.
+		self:popLocals(oldStack)
 	elseif astNode.kind == AstNode.Kind.WhileLoop then
 		-- Optimization: Ignore loop if the condition is always false.
 		if self:isConstantFalse(astNode) then
