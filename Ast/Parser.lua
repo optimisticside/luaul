@@ -794,6 +794,28 @@ function Parser:parseAssignment(left)
 	return AstNode.new(AstNode.Kind.Assign, values, self:parseExprList())
 end
 
+function Parser:parseIf()
+	local ifCondition = self:parseExpr()
+	self:_expect(Token.Kind.ReservedThen)
+
+	local thenBlock = self:parseBlock()
+	local elseBlock = nil
+
+	if self:_accept(Token.Kind.ReservedElseIf) then
+		elseBlock = self:parseIf()
+	else
+		if self:_accept(Token.Kind.ReservedElse) then
+			elseBlock = self:parseBlock()
+		end
+
+		-- Only expect an end if we do not have an else-if statement, in which
+		-- case the nested if statement will handle the end.
+		self:_expect(Token.Kind.ReservedEnd)
+	end
+
+	return AstNode.fromArray(AstNode.Kind.IfStat, ifCondition, thenBlock, elseBlock)
+end
+
 function Parser:parseStat()
 	-- Do-block parser.
 	if self:_accept(Token.Kind.ReservedDo) then
@@ -828,28 +850,7 @@ function Parser:parseStat()
 
 	-- If-block parser.
 	if self:_accept(Token.Kind.ReservedIf) then
-		local ifCondition = self:parseExpr()
-		self:_expect(Token.Kind.ReservedThen)
-
-		local thenBlock = self:parseBlock()
-		local blocks = { { ifCondition, thenBlock } }
-
-		while self:_accept(Token.Kind.ReservedElseIf) do
-			local elseIfCondition = self:parseExpr()
-			self:_expect(Token.Kind.ReservedThen)
-			table.insert(blocks, { elseIfCondition, self:parseBlock() })
-		end
-
-		if self:_accept(Token.Kind.ReservedElse) then
-			table.insert(blocks, self:parseBlock())
-		end
-
-		self:_accept(Token.Kind.ReservedEnd)
-		-- Each block is in the block array (in order)
-		-- `elseif` and `if` statements are stored as an array containing their
-		-- condition and block. `then` statements are just stored as just
-		-- there as just their block.
-		return AstNode.fromArray(AstNode.Kind.IfStat, blocks)
+		self:parseIf()
 	end
 
 	-- For-loop parser.
