@@ -140,8 +140,9 @@ function Parser.isFollowingBlock(token)
 		or token.kind == Token.Kind.ReservedUntil
 end
 
-function Parser:shouldParseTypePackAnnotation()
-	return self:_peek(Token.Kind.Dot3) or (self:_peek(Token.Kind.Name) and self:_peek(Token.Kind.Dot3, 2))
+function Parser:_shouldParseTypePackAnnotation()
+	return self:_peek() == Token.Kind.Dot3
+		or (self:_peek() == Token.Kind.Name and self:_peek(2) == Token.Kind.Dot3)
 end
 
 --[[
@@ -556,7 +557,7 @@ end
 
 function Parser:parseVariadicArgumentAnnotation()
 	-- Generic: a...
-	if self:_peek() == Token.Kind.Name and self:_peekn(2).kind == Token.Kind.Dot3 then
+	if self:_peek() == Token.Kind.Name and self:_peek(2).kind == Token.Kind.Dot3 then
 		local name = self:parseName()
 		self:_expect(Token.Kind.Dot3)
 
