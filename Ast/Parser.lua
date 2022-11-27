@@ -684,8 +684,23 @@ function Parser:parseSimpleTypeAnnotation(allowPack)
 	return nil
 end
 
+-- TODO: Finish this.
 function Parser:parseReturnTypeAnnotation()
-	local 
+	local varargAnnotation = nil
+	local result = {}
+
+	-- ( type-list )
+	if self:_accept(Token.Kind.LeftParen) then
+		if self:_shouldParseTypePackAnnotation() then
+			varargAnnotation = self:parseTypePackAnnotation()
+		else
+			table.insert(result, self:parseTypeAnnotation())
+		end
+
+		return AstNode.new(AstNode.Kind.TypeList, result), varargAnnotation
+	end
+
+	return nil
 end
 
 function Parser:parseOptionalReturnTypeAnnotation()
