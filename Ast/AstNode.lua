@@ -35,6 +35,7 @@ AstNode.Kind = enumerate("AstNode.Kind", {
 	-- Type-related things
 	"TypeUnion", "TypeIntersection", "TypeAssertion", "TypeReference", "TypeTypeOf", "TypeFunction",
 	"TypeTableIndexer", "TypeTableProp", "TypeTable",
+	"GenericTypePack", "VariadicTypePack",
 	"SingletonBool", "SingletonString",
 })
 
