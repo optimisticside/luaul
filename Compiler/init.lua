@@ -152,7 +152,34 @@ function Compiler:popLocals(startPosition)
 	end
 end
 
+function Compiler:compileStatWhile(whileStat)
+	-- Optimization: Ignore loop if the condition is always false.
+	if self:isConstantFalse(whileStat.condition) then
+		return
+	end
+
+	local oldJumps = #self._loopJumps
+	local oldLocals = #self._localStack
+	local startLabel = self._bytecode:emitLabel()
+	
+	self:compileCondition(whileStat.condition)
+	self:compileStat(whileStat.body)
+
+	local continueLabel = self._bytecode:emitLabel()
+	local backJump = self._bytecode:emitLabel()
+
+	self:_bytecode:emitAD(Opcodes.JumpBack, 0, 0)
+	local endLabel = self._bytecode:emitLabel()
+
+	self:patchJump(whileStat, backJump, loopLabel)
+	self:patchJump(whileStat, elseJump, endLabel)
+end
+
 function Compiler:compileStat(astNode)
+	if self.options.coverageLevel >= 1 and self:needsCoverage(astNode) then
+		self._bytecode:emitABC(Opcodes.Coverage, 0, 0, 0)
+	end
+	
 	if astNode.kind == AstNode.Kind.Block then
 		local _registerScope = RegisterScope.new(self)
 		local oldStack = #self._localStack
@@ -163,16 +190,7 @@ function Compiler:compileStat(astNode)
 	
 		self:popLocals(oldStack)
 	elseif astNode.kind == AstNode.Kind.WhileLoop then
-		-- Optimization: Ignore loop if the condition is always false.
-		if self:isConstantFalse(astNode) then
-			return
-		end
-
-		local oldJumps = #self._loopJumps
-		local oldLocals = #self._localStack
-
-		local label = self._bytecode:emitLabel()
-		
+		self:compileWhileStat(astNode)
 	end
 end
 
@@ -181,7 +199,29 @@ end
 	source as a "main" function.
 ]]
 function Compiler:compileFunction(func)
-	local 
+	local hasSelf = func.self ~= 0
+	local argumentCount = #func.arguments + (hasSelf and 1 or 0)
+	local functionId = self._bytecode:beginFunction(argumentCount, func.vararg)
+
+	if func.vararg then
+		self._bytecode:emitABC(Opcodes.PrepVarargs, argumentCount, 0, 0)
+	end
+
+	local arguments = self:allocateRegister(func, argumentCount, 0, 0)
+
+	if hasSelf then
+		self:pushLocal(func.self, arguments)
+	end
+	for index, argument in ipairs(func.arguments) do
+		self:pushLocal(argument, arguments + hasSelf + index)
+	end
+
+	local stat = func.body
+	for _, stat in ipairs(stat.children) do
+		self:compileStat(stat)
+	end
+
+	
 end
 
 return Compiler
