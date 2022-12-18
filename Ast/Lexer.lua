@@ -4,7 +4,7 @@
 	abstract-syntax-tree.
 ]]
 
-local Token = require(script and script.Parent.Token or "./Token")
+local Token = require(script and script.Parent.Token or "Ast/Token")
 
 local Lexer = {}
 Lexer.__index = Lexer

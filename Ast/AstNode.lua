@@ -2,7 +2,7 @@
 	Abstract-syntax-tree node implementation.
 ]]
 
-local enumerate = require(script and script.Parent.Parent.enumerate or "../Common/enumerate")
+local enumerate = require(script and script.Parent.Parent.enumerate or "Common/enumerate")
 
 local AstNode = {}
 AstNode.__index = AstNode

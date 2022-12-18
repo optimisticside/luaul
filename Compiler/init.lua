@@ -6,11 +6,11 @@ local MAX_REGISTER_COUNT = 255
 local MAX_UPVALUE_COUNT = 200
 local MAX_LOCAL_COUNT = 200
 
-local ConstantFolding = require(script and script.Parent.ConstantFolding or "./ConstantFolding")
-local RegisterScope = require(script and script.Parent.RegisterScope or "./RegisterScope")
+local ConstantFolding = require(script and script.Parent.ConstantFolding or "Compiler/ConstantFolding")
+local RegisterScope = require(script and script.Parent.RegisterScope or "Compiler/RegisterScope")
 
-local Opcodes = require(script and script.Parent.Parent.Common.Opcodes or "../Common/Opcodes")
-local AstNode = require(script and script.Parent.Parent.AstNode or "../Ast/AstNode")
+local Opcodes = require(script and script.Parent.Parent.Common.Opcodes or "Common/Opcodes")
+local AstNode = require(script and script.Parent.Parent.AstNode or "Ast/AstNode")
 
 local Compiler = {}
 Compiler.__index = Compiler
