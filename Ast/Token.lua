@@ -3,7 +3,7 @@
 	as well as debugging information such as where the token begins and ends.
 ]]
 
-local enumerate = require(script and script.Parent.Parent.enumerate or "../Common/enumerate.lua")
+local enumerate = require(script and script.Parent.Parent.enumerate or "../Common/enumerate")
 
 local Token = {}
 Token.__index = Token

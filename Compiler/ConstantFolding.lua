@@ -1,4 +1,4 @@
-local AstNode = require(script and script.Parent.AstNode or "./AstNode.lua")
+local AstNode = require(script and script.Parent.AstNode or "./AstNode")
 
 local ConstantFolding = {}
 

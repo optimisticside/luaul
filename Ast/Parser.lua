@@ -2,8 +2,8 @@
 	Recursive-descent parser implementation. The main routine is `Parser::parseChunk()`.
 ]]
 
-local AstNode = require(script and script.Parent.AstNode or "./AstNode.lua")
-local Token = require(script and script.Parent.Token or "./Token.lua")
+local AstNode = require(script and script.Parent.AstNode or "./AstNode")
+local Token = require(script and script.Parent.Token or "./Token")
 
 local Parser = {}
 Parser.__index = Parser
